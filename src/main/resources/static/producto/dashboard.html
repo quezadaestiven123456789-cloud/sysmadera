@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoodManager - Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/woodmanager.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand"><i class="fas fa-tree"></i></div>
+        <span class="sidebar-brand-text">WoodManager</span>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Principal</div>
+          <a href="dashboard.html" class="nav-item active"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
+          <a href="pedidos.html" class="nav-item"><i class="fas fa-clipboard-list"></i><span>Pedidos</span></a>
+          <a href="catalogo-muebles.html" class="nav-item"><i class="fas fa-chair"></i><span>Catálogo Muebles</span></a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Gestión</div>
+          <a href="clientes.html" class="nav-item"><i class="fas fa-users"></i><span>Clientes</span></a>
+          <a href="inventario-madera.html" class="nav-item"><i class="fas fa-cubes"></i><span>Inventario Madera</span></a>
+          <a href="facturacion.html" class="nav-item"><i class="fas fa-file-invoice-dollar"></i><span>Facturación</span></a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Analítica</div>
+          <a href="reportes.html" class="nav-item"><i class="fas fa-chart-bar"></i><span>Reportes</span></a>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="perfil.html" class="nav-item"><i class="fas fa-user"></i><span>Perfil</span></a>
+        <a href="login.html" class="nav-item"><i class="fas fa-right-from-bracket"></i><span>Cerrar Sesión</span></a>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <nav class="navbar-top">
+        <div class="navbar-left">
+          <button class="toggle-sidebar" id="toggleSidebar"><i class="fas fa-bars"></i></button>
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Buscar en WoodManager...">
+          </div>
+        </div>
+        <div class="navbar-right">
+          <button class="nav-icon-btn"><i class="far fa-bell"></i><span class="badge-dot"></span></button>
+          <button class="nav-icon-btn"><i class="far fa-envelope"></i></button>
+          <div class="dropdown">
+            <div class="nav-user" data-bs-toggle="dropdown">
+              <div class="nav-user-avatar">AD</div>
+              <div class="nav-user-info d-none d-md-block">
+                <div class="nav-user-name">Admin Wood</div>
+                <div class="nav-user-role">Administrador</div>
+              </div>
+            </div>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="perfil.html"><i class="fas fa-user"></i>Mi Perfil</a></li>
+              <li><a class="dropdown-item" href="#"><i class="fas fa-cog"></i>Configuración</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="login.html"><i class="fas fa-right-from-bracket"></i>Cerrar Sesión</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <div class="page-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Bienvenido de nuevo, Admin. Aquí está el resumen de tu taller.</p>
+          </div>
+          <div>
+            <button class="btn btn-primary"><i class="fas fa-plus me-2"></i>Nuevo Pedido</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-card-icon gold"><i class="fas fa-dollar-sign"></i></div>
+              <span class="stat-card-change up"><i class="fas fa-arrow-up"></i> 12.5%</span>
+            </div>
+            <div class="stat-card-value">$45,800</div>
+            <div class="stat-card-label">Ventas del Mes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-card-icon blue"><i class="fas fa-clipboard-list"></i></div>
+              <span class="stat-card-change up"><i class="fas fa-arrow-up"></i> 8.3%</span>
+            </div>
+            <div class="stat-card-value">156</div>
+            <div class="stat-card-label">Pedidos Activos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-card-icon wood"><i class="fas fa-cubes"></i></div>
+              <span class="stat-card-change down"><i class="fas fa-arrow-down"></i> 3.2%</span>
+            </div>
+            <div class="stat-card-value">1,240</div>
+            <div class="stat-card-label">Madera en Stock (m³)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-card-icon green"><i class="fas fa-users"></i></div>
+              <span class="stat-card-change up"><i class="fas fa-arrow-up"></i> 5.7%</span>
+            </div>
+            <div class="stat-card-value">89</div>
+            <div class="stat-card-label">Clientes Registrados</div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">Ventas Anuales</span>
+              <select class="form-select" style="width: auto; background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-primary); font-size: 12px; padding: 4px 28px 4px 12px;">
+                <option>2026</option>
+                <option>2025</option>
+              </select>
+            </div>
+            <div class="chart-wrapper"><canvas id="salesChart"></canvas></div>
+          </div>
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">Inventario por Madera</span>
+            </div>
+            <div class="chart-wrapper"><canvas id="woodChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="charts-grid-3">
+          <div class="chart-container">
+            <div class="chart-header"><span class="chart-title">Órdenes vs Producción</span></div>
+            <div class="chart-wrapper" style="height: 240px;"><canvas id="monthlyChart"></canvas></div>
+          </div>
+          <div class="content-card">
+            <div class="card-header-custom">
+              <h5><i class="fas fa-bolt me-2 text-gold"></i>Accesos Rápidos</h5>
+            </div>
+            <div class="card-body-custom">
+              <div class="quick-access-grid">
+                <a href="pedidos.html" class="quick-access-item">
+                  <i class="fas fa-plus-circle"></i>
+                  <span>Nuevo Pedido</span>
+                </a>
+                <a href="clientes.html" class="quick-access-item">
+                  <i class="fas fa-user-plus"></i>
+                  <span>Agregar Cliente</span>
+                </a>
+                <a href="inventario-madera.html" class="quick-access-item">
+                  <i class="fas fa-cube"></i>
+                  <span>Registrar Madera</span>
+                </a>
+                <a href="facturacion.html" class="quick-access-item">
+                  <i class="fas fa-file-invoice"></i>
+                  <span>Nueva Factura</span>
+                </a>
+                <a href="catalogo-muebles.html" class="quick-access-item">
+                  <i class="fas fa-couch"></i>
+                  <span>Ver Catálogo</span>
+                </a>
+                <a href="reportes.html" class="quick-access-item">
+                  <i class="fas fa-chart-pie"></i>
+                  <span>Reportes</span>
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="content-card">
+            <div class="card-header-custom">
+              <h5><i class="fas fa-clock me-2 text-gold"></i>Últimos Pedidos</h5>
+            </div>
+            <div class="card-body-custom" style="padding: 0;">
+              <table class="table-custom">
+                <thead>
+                  <tr><th>#</th><th>Cliente</th><th>Estado</th><th>Total</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>00128</td><td>Carlos López</td><td><span class="badge-custom success">Completado</span></td><td>$4,500</td></tr>
+                  <tr><td>00127</td><td>María García</td><td><span class="badge-custom warning">En Proceso</span></td><td>$8,200</td></tr>
+                  <tr><td>00126</td><td>Juan Martínez</td><td><span class="badge-custom gold">Pendiente</span></td><td>$3,150</td></tr>
+                  <tr><td>00125</td><td>Ana Rodríguez</td><td><span class="badge-custom success">Completado</span></td><td>$6,800</td></tr>
+                  <tr><td>00124</td><td>Pedro Sánchez</td><td><span class="badge-custom info">Revisión</span></td><td>$2,400</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/woodmanager.js"></script>
+</body>
+</html>

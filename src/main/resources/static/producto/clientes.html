@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoodManager - Clientes</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/woodmanager.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand"><i class="fas fa-tree"></i></div>
+        <span class="sidebar-brand-text">WoodManager</span>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Principal</div>
+          <a href="dashboard.html" class="nav-item"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
+          <a href="pedidos.html" class="nav-item"><i class="fas fa-clipboard-list"></i><span>Pedidos</span></a>
+          <a href="catalogo-muebles.html" class="nav-item"><i class="fas fa-chair"></i><span>Catálogo Muebles</span></a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Gestión</div>
+          <a href="clientes.html" class="nav-item active"><i class="fas fa-users"></i><span>Clientes</span></a>
+          <a href="inventario-madera.html" class="nav-item"><i class="fas fa-cubes"></i><span>Inventario Madera</span></a>
+          <a href="facturacion.html" class="nav-item"><i class="fas fa-file-invoice-dollar"></i><span>Facturación</span></a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Analítica</div>
+          <a href="reportes.html" class="nav-item"><i class="fas fa-chart-bar"></i><span>Reportes</span></a>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="perfil.html" class="nav-item"><i class="fas fa-user"></i><span>Perfil</span></a>
+        <a href="login.html" class="nav-item"><i class="fas fa-right-from-bracket"></i><span>Cerrar Sesión</span></a>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <nav class="navbar-top">
+        <div class="navbar-left">
+          <button class="toggle-sidebar" id="toggleSidebar"><i class="fas fa-bars"></i></button>
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Buscar en WoodManager...">
+          </div>
+        </div>
+        <div class="navbar-right">
+          <button class="nav-icon-btn"><i class="far fa-bell"></i><span class="badge-dot"></span></button>
+          <div class="dropdown">
+            <div class="nav-user" data-bs-toggle="dropdown">
+              <div class="nav-user-avatar">AD</div>
+              <div class="nav-user-info d-none d-md-block">
+                <div class="nav-user-name">Admin Wood</div>
+                <div class="nav-user-role">Administrador</div>
+              </div>
+            </div>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="perfil.html"><i class="fas fa-user"></i>Mi Perfil</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="login.html"><i class="fas fa-right-from-bracket"></i>Cerrar Sesión</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <div class="page-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Clientes</h1>
+            <p class="page-subtitle">Gestiona tus clientes registrados en el sistema.</p>
+          </div>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#clienteModal">
+            <i class="fas fa-plus me-2"></i>Agregar Cliente
+          </button>
+        </div>
+
+        <div class="content-card">
+          <div class="card-header-custom">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="searchClientes" placeholder="Buscar clientes..." onkeyup="searchTable('searchClientes', 'clientesTable')">
+            </div>
+            <div>
+              <select class="form-select" style="width: auto; background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-primary); font-size: 12px; padding: 6px 28px 6px 12px; display: inline-block;">
+                <option>Todos</option>
+                <option>Activos</option>
+                <option>Inactivos</option>
+              </select>
+            </div>
+          </div>
+          <div class="card-body-custom" style="padding: 0;">
+            <table class="table-custom" id="clientesTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Email</th>
+                  <th>Teléfono</th>
+                  <th>RFC</th>
+                  <th>Estado</th>
+                  <th style="text-align: right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td><strong>Carlos López</strong></td>
+                  <td>carlos@email.com</td>
+                  <td>555-123-4567</td>
+                  <td>LOCC850101</td>
+                  <td><span class="badge-custom success">Activo</span></td>
+                  <td style="text-align: right;">
+                    <button class="btn btn-sm btn-outline-gold me-1" onclick="editCliente(this)"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger-custom" onclick="confirmDelete('Carlos López')"><i class="fas fa-trash"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td><strong>María García</strong></td>
+                  <td>maria@email.com</td>
+                  <td>555-987-6543</td>
+                  <td>GARM920305</td>
+                  <td><span class="badge-custom success">Activo</span></td>
+                  <td style="text-align: right;">
+                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td><strong>Juan Martínez</strong></td>
+                  <td>juan@email.com</td>
+                  <td>555-456-7890</td>
+                  <td>MAJU780912</td>
+                  <td><span class="badge-custom gold">Potencial</span></td>
+                  <td style="text-align: right;">
+                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>4</td>
+                  <td><strong>Ana Rodríguez</strong></td>
+                  <td>ana@email.com</td>
+                  <td>555-234-5678</td>
+                  <td>ROAN880621</td>
+                  <td><span class="badge-custom success">Activo</span></td>
+                  <td style="text-align: right;">
+                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>5</td>
+                  <td><strong>Pedro Sánchez</strong></td>
+                  <td>pedro@email.com</td>
+                  <td>555-876-5432</td>
+                  <td>SAPE750114</td>
+                  <td><span class="badge-custom secondary">Inactivo</span></td>
+                  <td style="text-align: right;">
+                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-body-custom" style="border-top: 1px solid var(--border-color); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-secondary); font-size: 12px;">Mostrando 5 de 89 clientes</span>
+            <nav><ul class="pagination pagination-sm mb-0" style="gap: 4px;">
+              <li class="page-item disabled"><a class="page-link" href="#" style="background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-muted);">‹</a></li>
+              <li class="page-item active"><a class="page-link" href="#" style="background: var(--gold); border-color: var(--gold); color: #000;">1</a></li>
+              <li class="page-item"><a class="page-link" href="#" style="background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-secondary);">2</a></li>
+              <li class="page-item"><a class="page-link" href="#" style="background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-secondary);">3</a></li>
+              <li class="page-item"><a class="page-link" href="#" style="background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-secondary);">›</a></li>
+            </ul></nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="clienteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-user-plus me-2 text-gold"></i>Agregar Cliente</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="clienteForm">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Nombre completo</label>
+                <input type="text" class="form-control" placeholder="Nombre del cliente">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Email</label>
+                <input type="email" class="form-control" placeholder="correo@ejemplo.com">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Teléfono</label>
+                <input type="text" class="form-control" placeholder="555-000-0000">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">RFC</label>
+                <input type="text" class="form-control" placeholder="RFC">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Estado</label>
+                <select class="form-select" style="background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-primary);">
+                  <option>Activo</option>
+                  <option>Inactivo</option>
+                  <option>Potencial</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Dirección</label>
+                <textarea class="form-control" rows="2" placeholder="Dirección completa"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-gold" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary">Guardar Cliente</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/woodmanager.js"></script>
+  <script>
+    function editCliente(btn) {
+      var row = btn.closest('tr');
+      var name = row.querySelector('td:nth-child(2)').textContent.trim();
+      var email = row.querySelector('td:nth-child(3)').textContent.trim();
+      alert('Editando cliente: ' + name);
+    }
+  </script>
+</body>
+</html>

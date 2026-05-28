@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoodManager - Reportes</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/woodmanager.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand"><i class="fas fa-tree"></i></div>
+        <span class="sidebar-brand-text">WoodManager</span>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Principal</div>
+          <a href="dashboard.html" class="nav-item"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
+          <a href="pedidos.html" class="nav-item"><i class="fas fa-clipboard-list"></i><span>Pedidos</span></a>
+          <a href="catalogo-muebles.html" class="nav-item"><i class="fas fa-chair"></i><span>Catálogo Muebles</span></a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Gestión</div>
+          <a href="clientes.html" class="nav-item"><i class="fas fa-users"></i><span>Clientes</span></a>
+          <a href="inventario-madera.html" class="nav-item"><i class="fas fa-cubes"></i><span>Inventario Madera</span></a>
+          <a href="facturacion.html" class="nav-item"><i class="fas fa-file-invoice-dollar"></i><span>Facturación</span></a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Analítica</div>
+          <a href="reportes.html" class="nav-item active"><i class="fas fa-chart-bar"></i><span>Reportes</span></a>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="perfil.html" class="nav-item"><i class="fas fa-user"></i><span>Perfil</span></a>
+        <a href="login.html" class="nav-item"><i class="fas fa-right-from-bracket"></i><span>Cerrar Sesión</span></a>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <nav class="navbar-top">
+        <div class="navbar-left">
+          <button class="toggle-sidebar" id="toggleSidebar"><i class="fas fa-bars"></i></button>
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Buscar en WoodManager...">
+          </div>
+        </div>
+        <div class="navbar-right">
+          <button class="nav-icon-btn"><i class="far fa-bell"></i><span class="badge-dot"></span></button>
+          <div class="dropdown">
+            <div class="nav-user" data-bs-toggle="dropdown">
+              <div class="nav-user-avatar">AD</div>
+              <div class="nav-user-info d-none d-md-block">
+                <div class="nav-user-name">Admin Wood</div>
+                <div class="nav-user-role">Administrador</div>
+              </div>
+            </div>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="perfil.html"><i class="fas fa-user"></i>Mi Perfil</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="login.html"><i class="fas fa-right-from-bracket"></i>Cerrar Sesión</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <div class="page-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Reportes</h1>
+            <p class="page-subtitle">Analiza ventas, uso de madera y desperdicio del taller.</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <select class="form-select" style="width: auto; background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-primary); font-size: 12px; padding: 6px 28px 6px 12px;">
+              <option>Este Año</option>
+              <option>Último Mes</option>
+              <option>Últimos 3 Meses</option>
+              <option>Personalizado</option>
+            </select>
+            <button class="btn btn-outline-gold"><i class="fas fa-download me-2"></i>Exportar</button>
+          </div>
+        </div>
+
+        <ul class="nav nav-tabs-custom mb-4" id="reportTabs">
+          <li class="nav-item"><a class="nav-link active" href="#" data-tab="ventas">Ventas</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" data-tab="madera">Uso de Madera</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" data-tab="desperdicio">Desperdicio</a></li>
+        </ul>
+
+        <div id="tab-ventas">
+          <div class="charts-grid">
+            <div class="chart-container">
+              <div class="chart-header">
+                <span class="chart-title">Ventas Anuales</span>
+              </div>
+              <div class="chart-wrapper"><canvas id="reportsSalesChart"></canvas></div>
+            </div>
+            <div class="content-card">
+              <div class="card-header-custom"><h5><i class="fas fa-trophy me-2 text-gold"></i>Resumen de Ventas</h5></div>
+              <div class="card-body-custom">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                    <span style="color: var(--text-secondary);">Total Ventas</span>
+                    <span style="font-size: 22px; font-weight: 700;">$348,900</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                    <span style="color: var(--text-secondary);">Promedio Mensual</span>
+                    <span style="font-size: 18px; font-weight: 600;">$29,075</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                    <span style="color: var(--text-secondary);">Mejor Mes</span>
+                    <span style="font-size: 18px; font-weight: 600; color: var(--gold);">Diciembre - $45,800</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary);">Crecimiento Anual</span>
+                    <span style="font-size: 18px; font-weight: 600; color: var(--success);">+18.5%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-madera" style="display: none;">
+          <div class="charts-grid">
+            <div class="chart-container">
+              <div class="chart-header">
+                <span class="chart-title">Uso de Madera por Tipo</span>
+              </div>
+              <div class="chart-wrapper"><canvas id="woodUsageChart"></canvas></div>
+            </div>
+            <div class="content-card">
+              <div class="card-header-custom"><h5><i class="fas fa-tree me-2 text-gold"></i>Estadísticas de Madera</h5></div>
+              <div class="card-body-custom">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                      <span style="font-size: 12px; color: var(--text-secondary);">Caoba</span>
+                      <span style="font-size: 12px; font-weight: 600;">45/60 m³</span>
+                    </div>
+                    <div style="height: 6px; background: var(--bg-elevated); border-radius: 3px; overflow: hidden;">
+                      <div style="height: 100%; width: 75%; background: var(--gold); border-radius: 3px;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                      <span style="font-size: 12px; color: var(--text-secondary);">Roble</span>
+                      <span style="font-size: 12px; font-weight: 600;">38/50 m³</span>
+                    </div>
+                    <div style="height: 6px; background: var(--bg-elevated); border-radius: 3px; overflow: hidden;">
+                      <div style="height: 100%; width: 76%; background: var(--wood); border-radius: 3px;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                      <span style="font-size: 12px; color: var(--text-secondary);">Cedro</span>
+                      <span style="font-size: 12px; font-weight: 600;">22/35 m³</span>
+                    </div>
+                    <div style="height: 6px; background: var(--bg-elevated); border-radius: 3px; overflow: hidden;">
+                      <div style="height: 100%; width: 63%; background: var(--wood-light); border-radius: 3px;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                      <span style="font-size: 12px; color: var(--text-secondary);">Pino</span>
+                      <span style="font-size: 12px; font-weight: 600;">18/28 m³</span>
+                    </div>
+                    <div style="height: 6px; background: var(--bg-elevated); border-radius: 3px; overflow: hidden;">
+                      <div style="height: 100%; width: 64%; background: #d4a76a; border-radius: 3px;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                      <span style="font-size: 12px; color: var(--text-secondary);">Nogal</span>
+                      <span style="font-size: 12px; font-weight: 600;">12/20 m³</span>
+                    </div>
+                    <div style="height: 6px; background: var(--bg-elevated); border-radius: 3px; overflow: hidden;">
+                      <div style="height: 100%; width: 60%; background: #5a3a2a; border-radius: 3px;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-desperdicio" style="display: none;">
+          <div class="charts-grid">
+            <div class="chart-container">
+              <div class="chart-header">
+                <span class="chart-title">Distribución de Desperdicio</span>
+              </div>
+              <div class="chart-wrapper"><canvas id="wasteChart"></canvas></div>
+            </div>
+            <div class="content-card">
+              <div class="card-header-custom"><h5><i class="fas fa-recycle me-2 text-gold"></i>Optimización de Material</h5></div>
+              <div class="card-body-custom">
+                <div class="alert alert-custom alert-low-stock mb-3">
+                  <i class="fas fa-lightbulb"></i>
+                  El 55% del desperdicio es reutilizable para proyectos pequeños.
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                    <span style="color: var(--text-secondary);">Total Desperdicio (m³)</span>
+                    <span style="font-size: 20px; font-weight: 700; color: var(--danger);">28.5 m³</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                    <span style="color: var(--text-secondary);">Material Reutilizable</span>
+                    <span style="font-size: 16px; font-weight: 600; color: var(--gold);">15.7 m³ (55%)</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                    <span style="color: var(--text-secondary);">Reciclado</span>
+                    <span style="font-size: 16px; font-weight: 600; color: var(--info);">5.7 m³ (20%)</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary);">Desperdicio Total</span>
+                    <span style="font-size: 16px; font-weight: 600; color: var(--danger);">7.1 m³ (25%)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/woodmanager.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var tabs = document.querySelectorAll('#reportTabs .nav-link');
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function (e) {
+          e.preventDefault();
+          tabs.forEach(function (t) { t.classList.remove('active'); });
+          this.classList.add('active');
+
+          var tabId = this.getAttribute('data-tab');
+          document.querySelectorAll('[id^="tab-"]').forEach(function (el) {
+            el.style.display = 'none';
+          });
+          document.getElementById('tab-' + tabId).style.display = 'block';
+        });
+      });
+    });
+  </script>
+</body>
+</html>
