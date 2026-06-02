@@ -4,8 +4,6 @@ import com.madera.sys_madera.dto.request.ClientRequest;
 import com.madera.sys_madera.dto.response.ClientResponse;
 import com.madera.sys_madera.dto.response.PagedResponse;
 
-import java.util.List;
-
 public interface ClientService {
 
     ClientResponse create(ClientRequest request);

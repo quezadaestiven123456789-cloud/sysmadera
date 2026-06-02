@@ -184,8 +184,8 @@ const api = {
     return this.post('/facturas', data);
   },
 
-  registrarPago(id) {
-    return this.post(`/facturas/${id}/pago`);
+  registrarPago(id, amount) {
+    return this.post(`/facturas/${id}/pago?amount=${amount}`);
   },
 
   // ===================== DASHBOARD =====================

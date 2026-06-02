@@ -52,6 +52,13 @@ public class OrderServiceImpl implements OrderService {
             Furniture furniture = furnitureRepository.findById(detailRequest.furnitureId())
                     .orElseThrow(() -> new ResourceNotFoundException("Mueble", "id", detailRequest.furnitureId()));
 
+            if (furniture.getStockQuantity() < detailRequest.quantity()) {
+                throw new BadRequestException(
+                        "Stock insuficiente para '" + furniture.getName()
+                                + "'. Disponible: " + furniture.getStockQuantity()
+                                + ", solicitado: " + detailRequest.quantity());
+            }
+
             BigDecimal subtotal = furniture.getPrice()
                     .multiply(BigDecimal.valueOf(detailRequest.quantity()));
 
