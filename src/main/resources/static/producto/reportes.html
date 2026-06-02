@@ -231,23 +231,81 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/woodmanager.js"></script>
+  <script src="/js/api.js"></script>
   <script>
+    var salesChartInstance = null;
+    var woodChartInstance = null;
+
     document.addEventListener('DOMContentLoaded', function () {
+      if (!api.isAuthenticated()) { window.location.href = 'login.html'; return; }
       var tabs = document.querySelectorAll('#reportTabs .nav-link');
       tabs.forEach(function (tab) {
         tab.addEventListener('click', function (e) {
           e.preventDefault();
           tabs.forEach(function (t) { t.classList.remove('active'); });
           this.classList.add('active');
-
           var tabId = this.getAttribute('data-tab');
-          document.querySelectorAll('[id^="tab-"]').forEach(function (el) {
-            el.style.display = 'none';
-          });
+          document.querySelectorAll('[id^="tab-"]').forEach(function (el) { el.style.display = 'none'; });
           document.getElementById('tab-' + tabId).style.display = 'block';
+          if (tabId === 'ventas') cargarReporteVentas();
+          else if (tabId === 'madera') cargarReporteInventario();
         });
       });
+      cargarReporteVentas();
     });
+
+    async function cargarReporteVentas() {
+      try {
+        var data = await api.getReporteVentas('2026-01-01', '2026-12-31');
+        var months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        var values = data.monthlySales || data.ventasMensuales || [];
+        var ctx = document.getElementById('reportsSalesChart');
+        if (!ctx) return;
+        if (salesChartInstance) salesChartInstance.destroy();
+        salesChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: { labels: months, datasets: [{ label: 'Ventas ($)', data: values, backgroundColor: 'rgba(212, 175, 55, 0.7)', borderColor: 'var(--gold)', borderWidth: 1 }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#aaa' } } }, scales: { y: { ticks: { color: '#666' } }, x: { ticks: { color: '#666' } } } }
+        });
+        if (values.length) {
+          var total = values.reduce(function(a,b) { return a+b; }, 0);
+          var avg = Math.round(total / values.length);
+          var max = Math.max.apply(null, values);
+          var maxMonth = months[values.indexOf(max)];
+          var spans = document.querySelectorAll('#tab-ventas .content-card .card-body-custom span');
+          if (spans.length >= 3) {
+            spans[0].textContent = '$' + total.toLocaleString('es-MX');
+            spans[1].textContent = '$' + avg.toLocaleString('es-MX');
+            spans[2].textContent = maxMonth + ' - $' + max.toLocaleString('es-MX');
+          }
+        }
+      } catch (e) { console.error('Error cargando reporte de ventas:', e); }
+    }
+
+    async function cargarReporteInventario() {
+      try {
+        var data = await api.getReporteInventario();
+        var tipos = data.tiposMadera || data.woodTypes || [];
+        var ctx = document.getElementById('woodUsageChart');
+        if (!ctx) return;
+        if (woodChartInstance) woodChartInstance.destroy();
+        woodChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: { labels: tipos.map(function(t) { return t.nombre || t.name || '—'; }), datasets: [{ data: tipos.map(function(t) { return t.usado || t.used || 0; }), backgroundColor: ['#d4af37', '#8B6F47', '#C49A6C', '#d4a76a', '#5a3a2a'] }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#aaa' } } } }
+        });
+        var bars = document.querySelectorAll('#tab-madera .content-card .card-body-custom > div > div');
+        tipos.forEach(function(t, i) {
+          if (bars[i]) {
+            var pct = Math.min(Math.round(((t.usado || t.used || 0) / (t.total || 1)) * 100), 100);
+            var spans = bars[i].querySelectorAll('span');
+            if (spans.length >= 2) spans[1].textContent = (t.usado || t.used || 0) + '/' + (t.total || 0) + ' m\u00B3';
+            var fill = bars[i].querySelector('div div');
+            if (fill) fill.style.width = pct + '%';
+          }
+        });
+      } catch (e) { console.error('Error cargando reporte de inventario:', e); }
+    }
   </script>
 </body>
 </html>

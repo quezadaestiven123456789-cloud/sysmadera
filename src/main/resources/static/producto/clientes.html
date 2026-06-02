@@ -73,7 +73,7 @@
             <h1 class="page-title">Clientes</h1>
             <p class="page-subtitle">Gestiona tus clientes registrados en el sistema.</p>
           </div>
-          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#clienteModal">
+          <button class="btn btn-primary" onclick="abrirModalCrear()">
             <i class="fas fa-plus me-2"></i>Agregar Cliente
           </button>
         </div>
@@ -92,7 +92,7 @@
               </select>
             </div>
           </div>
-          <div class="card-body-custom" style="padding: 0;">
+            <div class="card-body-custom" style="padding: 0;">
             <table class="table-custom" id="clientesTable">
               <thead>
                 <tr>
@@ -101,76 +101,16 @@
                   <th>Email</th>
                   <th>Teléfono</th>
                   <th>RFC</th>
-                  <th>Estado</th>
                   <th style="text-align: right;">Acciones</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td>1</td>
-                  <td><strong>Carlos López</strong></td>
-                  <td>carlos@email.com</td>
-                  <td>555-123-4567</td>
-                  <td>LOCC850101</td>
-                  <td><span class="badge-custom success">Activo</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1" onclick="editCliente(this)"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger-custom" onclick="confirmDelete('Carlos López')"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>2</td>
-                  <td><strong>María García</strong></td>
-                  <td>maria@email.com</td>
-                  <td>555-987-6543</td>
-                  <td>GARM920305</td>
-                  <td><span class="badge-custom success">Activo</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>3</td>
-                  <td><strong>Juan Martínez</strong></td>
-                  <td>juan@email.com</td>
-                  <td>555-456-7890</td>
-                  <td>MAJU780912</td>
-                  <td><span class="badge-custom gold">Potencial</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>4</td>
-                  <td><strong>Ana Rodríguez</strong></td>
-                  <td>ana@email.com</td>
-                  <td>555-234-5678</td>
-                  <td>ROAN880621</td>
-                  <td><span class="badge-custom success">Activo</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>5</td>
-                  <td><strong>Pedro Sánchez</strong></td>
-                  <td>pedro@email.com</td>
-                  <td>555-876-5432</td>
-                  <td>SAPE750114</td>
-                  <td><span class="badge-custom secondary">Inactivo</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
+              <tbody id="clientesBody">
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Cargando...</td></tr>
               </tbody>
             </table>
           </div>
           <div class="card-body-custom" style="border-top: 1px solid var(--border-color); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: var(--text-secondary); font-size: 12px;">Mostrando 5 de 89 clientes</span>
+            <span style="color: var(--text-secondary); font-size: 12px;">Total: <span id="totalClientes">0</span> clientes</span>
             <nav><ul class="pagination pagination-sm mb-0" style="gap: 4px;">
               <li class="page-item disabled"><a class="page-link" href="#" style="background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-muted);">‹</a></li>
               <li class="page-item active"><a class="page-link" href="#" style="background: var(--gold); border-color: var(--gold); color: #000;">1</a></li>
@@ -188,59 +128,153 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="fas fa-user-plus me-2 text-gold"></i>Agregar Cliente</h5>
+          <h5 class="modal-title" id="modalClienteTitle"><i class="fas fa-user-plus me-2 text-gold"></i>Agregar Cliente</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="clienteForm">
+            <input type="hidden" id="clienteId">
             <div class="row g-3">
               <div class="col-12">
                 <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Nombre completo</label>
-                <input type="text" class="form-control" placeholder="Nombre del cliente">
+                <input type="text" class="form-control" id="clienteName" placeholder="Nombre del cliente" required>
               </div>
               <div class="col-md-6">
                 <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Email</label>
-                <input type="email" class="form-control" placeholder="correo@ejemplo.com">
+                <input type="email" class="form-control" id="clienteEmail" placeholder="correo@ejemplo.com">
               </div>
               <div class="col-md-6">
                 <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Teléfono</label>
-                <input type="text" class="form-control" placeholder="555-000-0000">
+                <input type="text" class="form-control" id="clientePhone" placeholder="555-000-0000">
               </div>
               <div class="col-md-6">
                 <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">RFC</label>
-                <input type="text" class="form-control" placeholder="RFC">
+                <input type="text" class="form-control" id="clienteRfc" placeholder="RFC">
               </div>
               <div class="col-md-6">
-                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Estado</label>
-                <select class="form-select" style="background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-primary);">
-                  <option>Activo</option>
-                  <option>Inactivo</option>
-                  <option>Potencial</option>
-                </select>
-              </div>
-              <div class="col-12">
                 <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Dirección</label>
-                <textarea class="form-control" rows="2" placeholder="Dirección completa"></textarea>
+                <input type="text" class="form-control" id="clienteAddress" placeholder="Dirección">
               </div>
             </div>
           </form>
+          <div id="clienteError" class="alert alert-danger d-none mt-2" style="background: rgba(255,77,79,0.1); border: 1px solid rgba(255,77,79,0.2); color: var(--danger); font-size: 12px; border-radius: var(--radius-md);"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-gold" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-primary">Guardar Cliente</button>
+          <button type="button" class="btn btn-primary" id="btnGuardarCliente" onclick="guardarCliente()">Guardar Cliente</button>
         </div>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
   <script src="/js/woodmanager.js"></script>
   <script>
-    function editCliente(btn) {
-      var row = btn.closest('tr');
-      var name = row.querySelector('td:nth-child(2)').textContent.trim();
-      var email = row.querySelector('td:nth-child(3)').textContent.trim();
-      alert('Editando cliente: ' + name);
+    var editClienteId = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      if (!api.isAuthenticated()) { window.location.href = 'login.html'; return; }
+      cargarClientes();
+    });
+
+    async function cargarClientes() {
+      try {
+        var res = await api.getClientes(0, 50);
+        var tbody = document.getElementById('clientesBody');
+        if (!res || !res.content || res.content.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px;">No hay clientes registrados</td></tr>';
+          document.querySelector('#totalClientes').textContent = '0';
+          return;
+        }
+        tbody.innerHTML = res.content.map(function (c) {
+          return '<tr>' +
+            '<td>' + c.id + '</td>' +
+            '<td><strong>' + c.name + '</strong></td>' +
+            '<td>' + (c.email || '—') + '</td>' +
+            '<td>' + (c.phone || '—') + '</td>' +
+            '<td>' + (c.rfc || '—') + '</td>' +
+            '<td style="text-align: right;">' +
+            '<button class="btn btn-sm btn-outline-gold me-1" onclick="editarCliente(' + c.id + ')"><i class="fas fa-edit"></i></button>' +
+            '<button class="btn btn-sm btn-danger-custom" onclick="eliminarCliente(' + c.id + ', \'' + c.name.replace(/'/g, "\\'") + '\')"><i class="fas fa-trash"></i></button>' +
+            '</td></tr>';
+        }).join('');
+        if (document.querySelector('#totalClientes')) {
+          document.querySelector('#totalClientes').textContent = res.totalElements || res.content.length;
+        }
+      } catch (e) {
+        document.getElementById('clientesBody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 40px;">Error al cargar: ' + e.message + '</td></tr>';
+      }
+    }
+
+    function abrirModalCrear() {
+      editClienteId = null;
+      document.getElementById('modalClienteTitle').innerHTML = '<i class="fas fa-user-plus me-2 text-gold"></i>Agregar Cliente';
+      document.getElementById('clienteId').value = '';
+      document.getElementById('clienteForm').reset();
+      document.getElementById('clienteError').classList.add('d-none');
+      var modal = new bootstrap.Modal(document.getElementById('clienteModal'));
+      modal.show();
+    }
+
+    async function editarCliente(id) {
+      try {
+        var c = await api.getCliente(id);
+        editClienteId = id;
+        document.getElementById('modalClienteTitle').innerHTML = '<i class="fas fa-edit me-2 text-gold"></i>Editar Cliente';
+        document.getElementById('clienteId').value = c.id;
+        document.getElementById('clienteName').value = c.name;
+        document.getElementById('clienteEmail').value = c.email || '';
+        document.getElementById('clientePhone').value = c.phone || '';
+        document.getElementById('clienteRfc').value = c.rfc || '';
+        document.getElementById('clienteAddress').value = c.address || '';
+        document.getElementById('clienteError').classList.add('d-none');
+        var modal = new bootstrap.Modal(document.getElementById('clienteModal'));
+        modal.show();
+      } catch (e) {
+        alert('Error al cargar cliente: ' + e.message);
+      }
+    }
+
+    async function guardarCliente() {
+      var data = {
+        name: document.getElementById('clienteName').value.trim(),
+        email: document.getElementById('clienteEmail').value.trim(),
+        phone: document.getElementById('clientePhone').value.trim(),
+        rfc: document.getElementById('clienteRfc').value.trim(),
+        address: document.getElementById('clienteAddress').value.trim()
+      };
+      if (!data.name) { mostrarErrorCliente('El nombre es obligatorio.'); return; }
+
+      document.getElementById('btnGuardarCliente').disabled = true;
+      try {
+        if (editClienteId) {
+          await api.updateCliente(editClienteId, data);
+        } else {
+          await api.createCliente(data);
+        }
+        bootstrap.Modal.getInstance(document.getElementById('clienteModal')).hide();
+        cargarClientes();
+      } catch (e) {
+        mostrarErrorCliente(e.message);
+        document.getElementById('btnGuardarCliente').disabled = false;
+      }
+    }
+
+    function mostrarErrorCliente(msg) {
+      var el = document.getElementById('clienteError');
+      el.textContent = msg;
+      el.classList.remove('d-none');
+    }
+
+    async function eliminarCliente(id, name) {
+      if (!confirm('¿Eliminar cliente "' + name + '"?')) return;
+      try {
+        await api.deleteCliente(id);
+        cargarClientes();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
     }
   </script>
 </body>

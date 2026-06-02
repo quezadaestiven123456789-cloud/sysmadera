@@ -73,7 +73,7 @@
             <h1 class="page-title">Inventario de Madera</h1>
             <p class="page-subtitle">Control de existencias, tipos de madera y alertas de stock.</p>
           </div>
-          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#maderaModal">
+          <button class="btn btn-primary" onclick="abrirModalMadera()">
             <i class="fas fa-plus me-2"></i>Agregar Madera
           </button>
         </div>
@@ -133,75 +133,16 @@
               <thead>
                 <tr>
                   <th>Tipo de Madera</th>
-                  <th>Cantidad (m³)</th>
-                  <th>Precio x m³</th>
+                  <th>Cantidad</th>
+                  <th>Unidad</th>
+                  <th>Precio</th>
                   <th>Proveedor</th>
-                  <th>Medidas</th>
                   <th>Estado</th>
                   <th style="text-align: right;">Acciones</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Caoba</strong></td>
-                  <td>60</td>
-                  <td>$2,500</td>
-                  <td>Maderas Premium SA</td>
-                  <td>2.4m x 0.3m x 0.05m</td>
-                  <td><span class="badge-custom success">Normal</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Roble</strong></td>
-                  <td>50</td>
-                  <td>$1,800</td>
-                  <td>Forestal del Norte</td>
-                  <td>3.0m x 0.4m x 0.05m</td>
-                  <td><span class="badge-custom success">Normal</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Cedro</strong></td>
-                  <td>8</td>
-                  <td>$1,200</td>
-                  <td>Maderas Premium SA</td>
-                  <td>2.4m x 0.3m x 0.04m</td>
-                  <td><span class="badge-custom danger">Stock Bajo</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Nogal</strong></td>
-                  <td>5</td>
-                  <td>$3,200</td>
-                  <td>Maderas Finas MX</td>
-                  <td>2.0m x 0.3m x 0.05m</td>
-                  <td><span class="badge-custom danger">Stock Bajo</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Pino</strong></td>
-                  <td>12</td>
-                  <td>$800</td>
-                  <td>Forestal del Norte</td>
-                  <td>3.0m x 0.3m x 0.04m</td>
-                  <td><span class="badge-custom warning">Por Agotarse</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger-custom"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
+              <tbody id="maderaBody">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Cargando...</td></tr>
               </tbody>
             </table>
           </div>
@@ -214,52 +155,156 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="fas fa-cube me-2 text-gold"></i>Agregar Madera</h5>
+          <h5 class="modal-title" id="modalMaderaTitle"><i class="fas fa-cube me-2 text-gold"></i>Agregar Madera</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <form>
+          <form id="maderaForm">
+            <input type="hidden" id="maderaId">
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Tipo de Madera</label>
-                <input type="text" class="form-control" placeholder="Ej: Caoba">
+                <input type="text" class="form-control" id="maderaWoodType" placeholder="Ej: Caoba" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Cantidad (m³)</label>
-                <input type="number" class="form-control" placeholder="0">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Cantidad</label>
+                <input type="number" step="0.01" class="form-control" id="maderaQuantity" placeholder="0" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Precio x m³</label>
-                <input type="text" class="form-control" placeholder="$0.00">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Unidad</label>
+                <select class="form-select" id="maderaUnit" style="background: var(--bg-elevated); border-color: var(--border-color); color: var(--text-primary);">
+                  <option value="m³">m³</option>
+                  <option value="pz">Piezas</option>
+                  <option value="kg">Kilogramos</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Precio Unitario</label>
+                <input type="number" step="0.01" class="form-control" id="maderaPrice" placeholder="0.00">
               </div>
               <div class="col-md-6">
                 <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Proveedor</label>
-                <input type="text" class="form-control" placeholder="Nombre del proveedor">
+                <input type="text" class="form-control" id="maderaSupplier" placeholder="Proveedor">
               </div>
               <div class="col-md-6">
-                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Largo (m)</label>
-                <input type="text" class="form-control" placeholder="2.4">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Ancho (m)</label>
-                <input type="text" class="form-control" placeholder="0.3">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Stock Mínimo</label>
+                <input type="number" step="0.01" class="form-control" id="maderaMinStock" placeholder="10">
               </div>
               <div class="col-12">
-                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Stock Mínimo</label>
-                <input type="number" class="form-control" placeholder="10">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 12px;">Descripción</label>
+                <textarea class="form-control" id="maderaDescription" rows="2" placeholder="Descripción"></textarea>
               </div>
             </div>
           </form>
+          <div id="maderaError" class="alert alert-danger d-none mt-2" style="background: rgba(255,77,79,0.1); border: 1px solid rgba(255,77,79,0.2); color: var(--danger); font-size: 12px; border-radius: var(--radius-md);"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-gold" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-primary">Guardar Material</button>
+          <button type="button" class="btn btn-primary" id="btnGuardarMadera" onclick="guardarMadera()">Guardar Material</button>
         </div>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
   <script src="/js/woodmanager.js"></script>
+  <script>
+    var editMaderaId = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      if (!api.isAuthenticated()) { window.location.href = 'login.html'; return; }
+      cargarInventario();
+    });
+
+    async function cargarInventario() {
+      try {
+        var res = await api.getInventario(0, 50);
+        var tbody = document.getElementById('maderaBody');
+        if (!res || !res.content || res.content.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">No hay materiales registrados</td></tr>';
+          return;
+        }
+        tbody.innerHTML = res.content.map(function (m) {
+          var badge = m.lowStock ? 'danger' : 'success';
+          var label = m.lowStock ? 'Stock Bajo' : 'Normal';
+          return '<tr>' +
+            '<td><strong>' + m.woodType + '</strong></td>' +
+            '<td>' + Number(m.quantity).toLocaleString() + '</td>' +
+            '<td>' + m.unit + '</td>' +
+            '<td>$' + Number(m.unitPrice || 0).toLocaleString() + '</td>' +
+            '<td>' + (m.supplier || '—') + '</td>' +
+            '<td><span class="badge-custom ' + badge + '">' + label + '</span></td>' +
+            '<td style="text-align: right;">' +
+            '<button class="btn btn-sm btn-outline-gold me-1" onclick="editarMadera(' + m.id + ')"><i class="fas fa-edit"></i></button>' +
+            '<button class="btn btn-sm btn-danger-custom" onclick="eliminarMadera(' + m.id + ')"><i class="fas fa-trash"></i></button>' +
+            '</td></tr>';
+        }).join('');
+      } catch (e) {
+        document.getElementById('maderaBody').innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 40px;">Error: ' + e.message + '</td></tr>';
+      }
+    }
+
+    function abrirModalMadera() {
+      editMaderaId = null;
+      document.getElementById('modalMaderaTitle').innerHTML = '<i class="fas fa-cube me-2 text-gold"></i>Agregar Madera';
+      document.getElementById('maderaForm').reset();
+      document.getElementById('maderaId').value = '';
+      document.getElementById('maderaError').classList.add('d-none');
+      new bootstrap.Modal(document.getElementById('maderaModal')).show();
+    }
+
+    async function editarMadera(id) {
+      try {
+        var m = await api.getInventarioItem(id);
+        editMaderaId = id;
+        document.getElementById('modalMaderaTitle').innerHTML = '<i class="fas fa-edit me-2 text-gold"></i>Editar Madera';
+        document.getElementById('maderaId').value = m.id;
+        document.getElementById('maderaWoodType').value = m.woodType;
+        document.getElementById('maderaQuantity').value = m.quantity;
+        document.getElementById('maderaUnit').value = m.unit || 'm³';
+        document.getElementById('maderaPrice').value = m.unitPrice || '';
+        document.getElementById('maderaSupplier').value = m.supplier || '';
+        document.getElementById('maderaMinStock').value = m.minimumStock || '';
+        document.getElementById('maderaDescription').value = m.description || '';
+        document.getElementById('maderaError').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('maderaModal')).show();
+      } catch (e) { alert('Error: ' + e.message); }
+    }
+
+    async function guardarMadera() {
+      var data = {
+        woodType: document.getElementById('maderaWoodType').value.trim(),
+        quantity: parseFloat(document.getElementById('maderaQuantity').value) || 0,
+        unit: document.getElementById('maderaUnit').value,
+        unitPrice: parseFloat(document.getElementById('maderaPrice').value) || 0,
+        supplier: document.getElementById('maderaSupplier').value.trim(),
+        minimumStock: parseFloat(document.getElementById('maderaMinStock').value) || 0,
+        description: document.getElementById('maderaDescription').value.trim()
+      };
+      if (!data.woodType || data.quantity <= 0) {
+        document.getElementById('maderaError').textContent = 'Tipo de madera y cantidad son obligatorios.';
+        document.getElementById('maderaError').classList.remove('d-none');
+        return;
+      }
+      document.getElementById('btnGuardarMadera').disabled = true;
+      try {
+        if (editMaderaId) await api.updateInventario(editMaderaId, data);
+        else await api.createInventario(data);
+        bootstrap.Modal.getInstance(document.getElementById('maderaModal')).hide();
+        cargarInventario();
+      } catch (e) {
+        document.getElementById('maderaError').textContent = e.message;
+        document.getElementById('maderaError').classList.remove('d-none');
+        document.getElementById('btnGuardarMadera').disabled = false;
+      }
+    }
+
+    async function eliminarMadera(id) {
+      if (!confirm('¿Eliminar este material?')) return;
+      try { await api.deleteInventario(id); cargarInventario(); }
+      catch (e) { alert('Error: ' + e.message); }
+    }
+  </script>
 </body>
 </html>

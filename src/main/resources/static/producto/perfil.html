@@ -233,5 +233,33 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/woodmanager.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!api.isAuthenticated()) { window.location.href = 'login.html'; return; }
+      var user = api.getUser();
+      if (user) {
+        var username = user.username || 'Usuario';
+        var email = user.email || '';
+        var role = (user.roles && user.roles.length > 0) ? user.roles[0] : '';
+        var initials = username.substring(0, 2).toUpperCase();
+        document.querySelectorAll('.nav-user-name').forEach(function(el) { el.textContent = username; });
+        document.querySelectorAll('.nav-user-role').forEach(function(el) { el.textContent = role; });
+        document.querySelectorAll('.nav-user-avatar, .profile-avatar span').forEach(function(el) { el.textContent = initials; });
+        var nameInput = document.querySelector('input[value="Admin Wood"]');
+        if (nameInput) nameInput.value = username;
+        var emailInput = document.querySelector('input[value="admin@woodmanager.com"]');
+        if (emailInput) emailInput.value = email;
+        var roleInput = document.querySelector('input[value="Administrador"]');
+        if (roleInput) roleInput.value = role;
+        var h4 = document.querySelector('.profile-avatar-section h4');
+        if (h4) h4.textContent = username;
+        var badge = document.querySelector('.badge-custom.gold');
+        if (badge) badge.textContent = role;
+        var p = document.querySelector('.profile-avatar-section p');
+        if (p) p.innerHTML = '<span class="badge-custom gold me-2">' + role + '</span>\n                ' + email;
+      }
+    });
+  </script>
 </body>
 </html>

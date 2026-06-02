@@ -77,28 +77,28 @@
         </div>
 
         <div class="stats-grid">
-          <div class="stat-card">
+          <div class="stat-card" id="facturadoMes">
             <div class="stat-card-header">
               <div class="stat-card-icon green"><i class="fas fa-check-circle"></i></div>
             </div>
             <div class="stat-card-value">$45,800</div>
             <div class="stat-card-label">Facturado este Mes</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" id="pendientePago">
             <div class="stat-card-header">
               <div class="stat-card-icon gold"><i class="fas fa-clock"></i></div>
             </div>
             <div class="stat-card-value">$12,300</div>
             <div class="stat-card-label">Pendiente de Pago</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" id="cobrado">
             <div class="stat-card-header">
               <div class="stat-card-icon green"><i class="fas fa-dollar-sign"></i></div>
             </div>
             <div class="stat-card-value">$33,500</div>
             <div class="stat-card-label">Cobrado</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" id="vencidas">
             <div class="stat-card-header">
               <div class="stat-card-icon warning"><i class="fas fa-exclamation-circle"></i></div>
             </div>
@@ -136,79 +136,8 @@
                   <th style="text-align: right;">Acciones</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td><strong>FAC-00128</strong></td>
-                  <td>Carlos López</td>
-                  <td>15/05/2026</td>
-                  <td>30/05/2026</td>
-                  <td>$4,500</td>
-                  <td><span class="badge-custom success">Pagada</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-file-pdf"></i></button>
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-eye"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>FAC-00127</strong></td>
-                  <td>María García</td>
-                  <td>14/05/2026</td>
-                  <td>13/06/2026</td>
-                  <td>$8,200</td>
-                  <td><span class="badge-custom gold">Pendiente</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-file-pdf"></i></button>
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-eye"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>FAC-00126</strong></td>
-                  <td>Juan Martínez</td>
-                  <td>12/05/2026</td>
-                  <td>11/06/2026</td>
-                  <td>$3,150</td>
-                  <td><span class="badge-custom gold">Pendiente</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-file-pdf"></i></button>
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-eye"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>FAC-00125</strong></td>
-                  <td>Ana Rodríguez</td>
-                  <td>10/05/2026</td>
-                  <td>25/05/2026</td>
-                  <td>$6,800</td>
-                  <td><span class="badge-custom danger">Vencida</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-file-pdf"></i></button>
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-eye"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>FAC-00124</strong></td>
-                  <td>Pedro Sánchez</td>
-                  <td>08/05/2026</td>
-                  <td>07/06/2026</td>
-                  <td>$2,400</td>
-                  <td><span class="badge-custom success">Pagada</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-file-pdf"></i></button>
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-eye"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>FAC-00123</strong></td>
-                  <td>Sofía Hernández</td>
-                  <td>05/05/2026</td>
-                  <td>04/06/2026</td>
-                  <td>$1,800</td>
-                  <td><span class="badge-custom secondary">Cancelada</span></td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-file-pdf"></i></button>
-                    <button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-eye"></i></button>
-                  </td>
-                </tr>
+              <tbody id="facturasBody">
+                <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Cargando facturas...</td></tr>
               </tbody>
             </table>
           </div>
@@ -229,5 +158,57 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/woodmanager.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!api.isAuthenticated()) { window.location.href = 'login.html'; return; }
+      cargarFacturas();
+    });
+
+    function getFacturaBadge(status) {
+      var map = { 'PAGADA': 'success', 'PENDIENTE': 'gold', 'VENCIDA': 'danger', 'CANCELADA': 'secondary' };
+      return map[status] || 'secondary';
+    }
+
+    function getFacturaLabel(status) {
+      var map = { 'PAGADA': 'Pagada', 'PENDIENTE': 'Pendiente', 'VENCIDA': 'Vencida', 'CANCELADA': 'Cancelada' };
+      return map[status] || status;
+    }
+
+    async function cargarFacturas() {
+      try {
+        var data = await api.getFacturas(0, 50);
+        var facturas = data.content || data;
+        var tbody = document.getElementById('facturasBody');
+        tbody.innerHTML = '';
+        var facturadoMes = 0, pendientePago = 0, cobrado = 0, vencidas = 0;
+        facturas.forEach(function(f) {
+          var total = f.totalAmount || f.total || 0;
+          facturadoMes += total;
+          if (f.status === 'PAGADA') cobrado += total;
+          else if (f.status === 'PENDIENTE') pendientePago += total;
+          if (f.status === 'VENCIDA') vencidas++;
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td><strong>' + (f.invoiceNumber || f.facturaNumber || '#' + f.id) + '</strong></td>' +
+            '<td>' + (f.clientName || '—') + '</td>' +
+            '<td>' + (f.issueDate ? new Date(f.issueDate).toLocaleDateString('es-MX') : (f.fecha ? new Date(f.fecha).toLocaleDateString('es-MX') : '—')) + '</td>' +
+            '<td>' + (f.dueDate ? new Date(f.dueDate).toLocaleDateString('es-MX') : (f.vencimiento ? new Date(f.vencimiento).toLocaleDateString('es-MX') : '—')) + '</td>' +
+            '<td>$' + Number(total).toLocaleString('es-MX') + '</td>' +
+            '<td><span class="badge-custom ' + getFacturaBadge(f.status) + '">' + getFacturaLabel(f.status) + '</span></td>' +
+            '<td style="text-align:right;">' +
+              '<button class="btn btn-sm btn-outline-gold me-1"><i class="fas fa-file-pdf"></i></button>' +
+              '<button class="btn btn-sm btn-outline-gold"><i class="fas fa-eye"></i></button>' +
+            '</td>';
+          tbody.appendChild(tr);
+        });
+        if (document.getElementById('facturadoMes')) document.getElementById('facturadoMes').querySelector('.stat-card-value').textContent = '$' + facturadoMes.toLocaleString('es-MX');
+        if (document.getElementById('pendientePago')) document.getElementById('pendientePago').querySelector('.stat-card-value').textContent = '$' + pendientePago.toLocaleString('es-MX');
+        if (document.getElementById('cobrado')) document.getElementById('cobrado').querySelector('.stat-card-value').textContent = '$' + cobrado.toLocaleString('es-MX');
+        if (document.getElementById('vencidas')) document.getElementById('vencidas').querySelector('.stat-card-value').textContent = vencidas;
+      } catch (e) {
+        document.getElementById('facturasBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--danger);">Error al cargar: ' + e.message + '</td></tr>';
+      }
+    }
+  </script>
 </body>
 </html>

@@ -85,33 +85,33 @@
           <div class="stat-card">
             <div class="stat-card-header">
               <div class="stat-card-icon gold"><i class="fas fa-dollar-sign"></i></div>
-              <span class="stat-card-change up"><i class="fas fa-arrow-up"></i> 12.5%</span>
+              <span class="stat-card-change up" id="changeVentas"><i class="fas fa-arrow-up"></i> --</span>
             </div>
-            <div class="stat-card-value">$45,800</div>
+            <div class="stat-card-value" id="statVentas">--</div>
             <div class="stat-card-label">Ventas del Mes</div>
           </div>
           <div class="stat-card">
             <div class="stat-card-header">
               <div class="stat-card-icon blue"><i class="fas fa-clipboard-list"></i></div>
-              <span class="stat-card-change up"><i class="fas fa-arrow-up"></i> 8.3%</span>
+              <span class="stat-card-change up" id="changePedidos"><i class="fas fa-arrow-up"></i> --</span>
             </div>
-            <div class="stat-card-value">156</div>
+            <div class="stat-card-value" id="statPedidos">--</div>
             <div class="stat-card-label">Pedidos Activos</div>
           </div>
           <div class="stat-card">
             <div class="stat-card-header">
               <div class="stat-card-icon wood"><i class="fas fa-cubes"></i></div>
-              <span class="stat-card-change down"><i class="fas fa-arrow-down"></i> 3.2%</span>
+              <span class="stat-card-change down" id="changeMadera"><i class="fas fa-arrow-down"></i> --</span>
             </div>
-            <div class="stat-card-value">1,240</div>
+            <div class="stat-card-value" id="statMadera">--</div>
             <div class="stat-card-label">Madera en Stock (m³)</div>
           </div>
           <div class="stat-card">
             <div class="stat-card-header">
               <div class="stat-card-icon green"><i class="fas fa-users"></i></div>
-              <span class="stat-card-change up"><i class="fas fa-arrow-up"></i> 5.7%</span>
+              <span class="stat-card-change up" id="changeClientes"><i class="fas fa-arrow-up"></i> --</span>
             </div>
-            <div class="stat-card-value">89</div>
+            <div class="stat-card-value" id="statClientes">--</div>
             <div class="stat-card-label">Clientes Registrados</div>
           </div>
         </div>
@@ -178,7 +178,7 @@
               <h5><i class="fas fa-clock me-2 text-gold"></i>Últimos Pedidos</h5>
             </div>
             <div class="card-body-custom" style="padding: 0;">
-              <table class="table-custom">
+              <table class="table-custom" id="ultimosPedidos">
                 <thead>
                   <tr><th>#</th><th>Cliente</th><th>Estado</th><th>Total</th></tr>
                 </thead>
@@ -199,5 +199,34 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/woodmanager.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      if (!api.isAuthenticated()) { window.location.href = 'login.html'; return; }
+
+      try {
+        var data = await api.getDashboardAdmin();
+        if (data.stats) {
+          document.getElementById('statVentas').textContent = '$' + Number(data.stats.ventasMes || 0).toLocaleString();
+          document.getElementById('statPedidos').textContent = data.stats.pedidosActivos || 0;
+          document.getElementById('statMadera').textContent = (data.stats.maderaStock || 0).toLocaleString();
+          document.getElementById('statClientes').textContent = data.stats.clientes || 0;
+        }
+      } catch (e) { console.warn('Error cargando dashboard:', e); }
+
+      try {
+        var pedidosRes = await api.getPedidos(0, 5);
+        if (pedidosRes && pedidosRes.content) {
+          var tbody = document.querySelector('#ultimosPedidos tbody');
+          if (tbody) {
+            tbody.innerHTML = pedidosRes.content.map(function (p) {
+              var badge = p.status === 'COMPLETADA' ? 'success' : p.status === 'EN_PROCESO' ? 'warning' : p.status === 'PENDIENTE' ? 'gold' : 'info';
+              return '<tr><td>' + p.orderNumber + '</td><td>' + p.clientName + '</td><td><span class="badge-custom ' + badge + '">' + p.status + '</span></td><td>$' + Number(p.totalAmount).toLocaleString() + '</td></tr>';
+            }).join('');
+          }
+        }
+      } catch (e) { console.warn('Error cargando pedidos:', e); }
+    });
+  </script>
 </body>
 </html>
