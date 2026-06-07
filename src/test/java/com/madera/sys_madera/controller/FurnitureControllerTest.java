@@ -202,6 +202,22 @@ class FurnitureControllerTest {
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Mueble no encontrado con id: '999'"));
         }
+
+        @Test
+        @DisplayName("should return 200 when furniture is inactive")
+        void shouldReturn200_whenInactive() throws Exception {
+            var inactiveResponse = new FurnitureResponse(
+                    FURNITURE_ID, FURNITURE_NAME, "Descripción",
+                    PRICE, WOOD_TYPE, "100x200", CATEGORY, 10,
+                    false, null, LocalDateTime.now(), LocalDateTime.now());
+
+            given(furnitureService.findById(FURNITURE_ID))
+                    .willReturn(inactiveResponse);
+
+            mockMvc.perform(get(BASE_PATH + "/{id}", FURNITURE_ID))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").value(false));
+        }
     }
 
     @Nested
@@ -222,7 +238,12 @@ class FurnitureControllerTest {
                             .param("size", "10")
                             .param("sort", "id")
                             .param("direction", "asc"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(1))
+                    .andExpect(jsonPath("$.content[0].name").value(FURNITURE_NAME))
+                    .andExpect(jsonPath("$.totalElements").value(1))
+                    .andExpect(jsonPath("$.totalPages").value(1))
+                    .andExpect(jsonPath("$.page").value(0));
         }
 
         @Test
@@ -233,7 +254,11 @@ class FurnitureControllerTest {
 
             mockMvc.perform(get(BASE_PATH)
                             .param("search", "Mesa"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(0))
+                    .andExpect(jsonPath("$.totalElements").value(0))
+                    .andExpect(jsonPath("$.totalPages").value(0))
+                    .andExpect(jsonPath("$.page").value(0));
         }
 
         @Test
@@ -244,7 +269,11 @@ class FurnitureControllerTest {
 
             mockMvc.perform(get(BASE_PATH)
                             .param("category", CATEGORY))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(0))
+                    .andExpect(jsonPath("$.totalElements").value(0))
+                    .andExpect(jsonPath("$.totalPages").value(0))
+                    .andExpect(jsonPath("$.page").value(0));
         }
     }
 

@@ -195,7 +195,12 @@ class InvoiceControllerTest {
                             .param("size", "10")
                             .param("sort", "id")
                             .param("direction", "asc"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(1))
+                    .andExpect(jsonPath("$.content[0].invoiceNumber").value(INVOICE_NUMBER))
+                    .andExpect(jsonPath("$.totalElements").value(1))
+                    .andExpect(jsonPath("$.totalPages").value(1))
+                    .andExpect(jsonPath("$.page").value(0));
         }
 
         @Test
@@ -206,7 +211,11 @@ class InvoiceControllerTest {
 
             mockMvc.perform(get(BASE_PATH)
                             .param("status", "PENDIENTE"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(0))
+                    .andExpect(jsonPath("$.totalElements").value(0))
+                    .andExpect(jsonPath("$.totalPages").value(0))
+                    .andExpect(jsonPath("$.page").value(0));
         }
     }
 

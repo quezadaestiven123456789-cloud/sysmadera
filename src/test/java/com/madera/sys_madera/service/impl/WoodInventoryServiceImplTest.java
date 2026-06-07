@@ -11,6 +11,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -95,58 +97,37 @@ class WoodInventoryServiceImplTest {
             verify(woodInventoryRepository, never()).save(any());
         }
 
-        @Test
-        @DisplayName("should create with negative quantity")
-        void shouldCreateWithNegativeQuantity() {
-            var request = new WoodInventoryRequest(
-                    "Pino", new BigDecimal("-50.00"), "m3",
-                    UNIT_PRICE, "Prov", null, MINIMUM_STOCK);
+        @ParameterizedTest
+        @CsvSource({
+            "-50.00, quantity",
+            "0, quantity",
+            "-10.00, unitPrice"
+        })
+        @DisplayName("should create with edge values for quantity/unitPrice")
+        void shouldCreateWithEdgeValues(String valueStr, String field) {
+            BigDecimal value = new BigDecimal(valueStr);
+            BigDecimal quantity = "quantity".equals(field) ? value : QUANTITY;
+            BigDecimal unitPrice = "unitPrice".equals(field) ? value : UNIT_PRICE;
+
+            var request = new WoodInventoryRequest("Pino", quantity, "m3", unitPrice, "Prov", null, MINIMUM_STOCK);
             var saved = WoodInventory.builder()
-                    .id(2L).woodType("Pino").quantity(new BigDecimal("-50.00"))
-                    .unit("m3").unitPrice(UNIT_PRICE).minimumStock(MINIMUM_STOCK).build();
+                    .id(2L).woodType("Pino")
+                    .quantity(quantity)
+                    .unit("m3")
+                    .unitPrice(unitPrice)
+                    .minimumStock(MINIMUM_STOCK)
+                    .build();
 
             given(woodInventoryRepository.findByWoodTypeIgnoreCase("Pino")).willReturn(Optional.empty());
             given(woodInventoryRepository.save(any(WoodInventory.class))).willReturn(saved);
 
             WoodInventoryResponse response = woodInventoryService.create(request);
 
-            assertThat(response.quantity()).isEqualByComparingTo(new BigDecimal("-50.00"));
-        }
-
-        @Test
-        @DisplayName("should create with zero quantity")
-        void shouldCreateWithZeroQuantity() {
-            var request = new WoodInventoryRequest(
-                    "Pino", BigDecimal.ZERO, "m3",
-                    UNIT_PRICE, "Prov", null, MINIMUM_STOCK);
-            var saved = WoodInventory.builder()
-                    .id(2L).woodType("Pino").quantity(BigDecimal.ZERO)
-                    .unit("m3").unitPrice(UNIT_PRICE).minimumStock(MINIMUM_STOCK).build();
-
-            given(woodInventoryRepository.findByWoodTypeIgnoreCase("Pino")).willReturn(Optional.empty());
-            given(woodInventoryRepository.save(any(WoodInventory.class))).willReturn(saved);
-
-            WoodInventoryResponse response = woodInventoryService.create(request);
-
-            assertThat(response.quantity()).isEqualByComparingTo(BigDecimal.ZERO);
-        }
-
-        @Test
-        @DisplayName("should create with negative unit price")
-        void shouldCreateWithNegativeUnitPrice() {
-            var request = new WoodInventoryRequest(
-                    "Pino", QUANTITY, "m3",
-                    new BigDecimal("-10.00"), "Prov", null, MINIMUM_STOCK);
-            var saved = WoodInventory.builder()
-                    .id(2L).woodType("Pino").quantity(QUANTITY)
-                    .unit("m3").unitPrice(new BigDecimal("-10.00")).minimumStock(MINIMUM_STOCK).build();
-
-            given(woodInventoryRepository.findByWoodTypeIgnoreCase("Pino")).willReturn(Optional.empty());
-            given(woodInventoryRepository.save(any(WoodInventory.class))).willReturn(saved);
-
-            WoodInventoryResponse response = woodInventoryService.create(request);
-
-            assertThat(response.unitPrice()).isEqualByComparingTo(new BigDecimal("-10.00"));
+            if ("quantity".equals(field)) {
+                assertThat(response.quantity()).isEqualByComparingTo(value);
+            } else {
+                assertThat(response.unitPrice()).isEqualByComparingTo(value);
+            }
         }
 
         @Test
@@ -214,6 +195,83 @@ class WoodInventoryServiceImplTest {
             assertThatThrownBy(() -> woodInventoryService.update(INVENTORY_ID, request))
                     .isInstanceOf(DuplicateResourceException.class)
                     .hasMessageContaining("Pino");
+
+            verify(woodInventoryRepository, never()).save(any());
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+            "-50.00, quantity",
+            "0, quantity",
+            "-10.00, unitPrice",
+            "0, unitPrice"
+        })
+        @DisplayName("should update with edge values for quantity/unitPrice")
+        void shouldUpdateWithEdgeValues(String valueStr, String field) {
+            BigDecimal value = new BigDecimal(valueStr);
+            BigDecimal quantity = "quantity".equals(field) ? value : QUANTITY;
+            BigDecimal unitPrice = "unitPrice".equals(field) ? value : UNIT_PRICE;
+
+            var request = new WoodInventoryRequest(
+                    WOOD_TYPE, quantity, UNIT, unitPrice,
+                    SUPPLIER, DESCRIPTION, MINIMUM_STOCK);
+            var existingItem = buildInventory();
+
+            given(woodInventoryRepository.findById(INVENTORY_ID)).willReturn(Optional.of(existingItem));
+            given(woodInventoryRepository.findByWoodTypeIgnoreCase(WOOD_TYPE)).willReturn(Optional.of(existingItem));
+            given(woodInventoryRepository.save(any(WoodInventory.class))).willReturn(existingItem);
+
+            WoodInventoryResponse response = woodInventoryService.update(INVENTORY_ID, request);
+
+            if ("quantity".equals(field)) {
+                assertThat(response.quantity()).isEqualByComparingTo(value);
+                assertThat(response.totalValue()).isEqualByComparingTo(value.multiply(UNIT_PRICE));
+            } else {
+                assertThat(response.unitPrice()).isEqualByComparingTo(value);
+                assertThat(response.totalValue()).isEqualByComparingTo(QUANTITY.multiply(value));
+            }
+            verify(woodInventoryRepository).save(any(WoodInventory.class));
+        }
+
+        @Test
+        @DisplayName("should update with null optional fields")
+        void shouldUpdateWithNullOptionalFields() {
+            var request = new WoodInventoryRequest(
+                    WOOD_TYPE, QUANTITY, UNIT, UNIT_PRICE,
+                    null, null, null);
+            var existingItem = buildInventory();
+
+            given(woodInventoryRepository.findById(INVENTORY_ID)).willReturn(Optional.of(existingItem));
+            given(woodInventoryRepository.findByWoodTypeIgnoreCase(WOOD_TYPE)).willReturn(Optional.of(existingItem));
+            given(woodInventoryRepository.save(any(WoodInventory.class))).willReturn(existingItem);
+
+            WoodInventoryResponse response = woodInventoryService.update(INVENTORY_ID, request);
+
+            assertThat(response.supplier()).isNull();
+            assertThat(response.description()).isNull();
+            assertThat(response.minimumStock()).isNull();
+            assertThat(response.lowStock()).isFalse();
+            verify(woodInventoryRepository).save(any(WoodInventory.class));
+        }
+
+        @Test
+        @DisplayName("should update when wood type is unchanged (same id)")
+        void shouldUpdate_whenSameWoodType() {
+            var request = new WoodInventoryRequest(
+                    WOOD_TYPE, QUANTITY, UNIT, UNIT_PRICE,
+                    SUPPLIER, DESCRIPTION, MINIMUM_STOCK);
+            var existingItem = buildInventory();
+
+            given(woodInventoryRepository.findById(INVENTORY_ID)).willReturn(Optional.of(existingItem));
+            given(woodInventoryRepository.findByWoodTypeIgnoreCase(WOOD_TYPE)).willReturn(Optional.of(existingItem));
+            given(woodInventoryRepository.save(any(WoodInventory.class))).willReturn(existingItem);
+
+            WoodInventoryResponse response = woodInventoryService.update(INVENTORY_ID, request);
+
+            assertThat(response.woodType()).isEqualTo(WOOD_TYPE);
+            assertThat(response.quantity()).isEqualByComparingTo(QUANTITY);
+            assertThat(response.unitPrice()).isEqualByComparingTo(UNIT_PRICE);
+            verify(woodInventoryRepository).save(any(WoodInventory.class));
         }
     }
 

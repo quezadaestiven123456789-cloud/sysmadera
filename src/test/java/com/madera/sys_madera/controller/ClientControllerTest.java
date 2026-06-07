@@ -11,6 +11,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
@@ -23,9 +26,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -174,7 +174,12 @@ class ClientControllerTest {
                                         .param("size", "10")
                                         .param("sort", "id")
                                         .param("direction", "asc"))
-                                        .andExpect(status().isOk());
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.content.length()").value(1))
+                                        .andExpect(jsonPath("$.content[0].name").value(CLIENT_NAME))
+                                        .andExpect(jsonPath("$.totalElements").value(1))
+                                        .andExpect(jsonPath("$.totalPages").value(1))
+                                        .andExpect(jsonPath("$.page").value(0));
                 }
 
                 @Test
@@ -185,7 +190,11 @@ class ClientControllerTest {
 
                         mockMvc.perform(get(BASE_PATH)
                                         .param("search", "Juan"))
-                                        .andExpect(status().isOk());
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.content.length()").value(0))
+                                        .andExpect(jsonPath("$.totalElements").value(0))
+                                        .andExpect(jsonPath("$.totalPages").value(0))
+                                        .andExpect(jsonPath("$.page").value(0));
                 }
         }
 

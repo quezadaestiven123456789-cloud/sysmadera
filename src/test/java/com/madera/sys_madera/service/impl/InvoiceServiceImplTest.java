@@ -12,6 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -157,10 +159,15 @@ class InvoiceServiceImplTest {
                     .hasMessageContaining("exceder");
         }
 
-        @Test
-        @DisplayName("should create with negative paid amount")
-        void shouldCreateWithNegativePaidAmount() {
-            var request = new InvoiceRequest(ORDER_ID, ISSUE_DATE, DUE_DATE, new BigDecimal("-200.00"), null);
+        @ParameterizedTest
+        @CsvSource({
+            "-200.00, PAGADA_PARCIAL",
+            "0, PENDIENTE"
+        })
+        @DisplayName("should create with edge values for paidAmount")
+        void shouldCreateWithEdgePaidAmount(String paidAmountStr, String expectedStatus) {
+            BigDecimal paidAmount = new BigDecimal(paidAmountStr);
+            var request = new InvoiceRequest(ORDER_ID, ISSUE_DATE, DUE_DATE, paidAmount, null);
             var order = buildOrder();
 
             given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
@@ -170,26 +177,8 @@ class InvoiceServiceImplTest {
 
             InvoiceResponse response = invoiceService.create(request);
 
-            assertThat(response.paidAmount()).isEqualByComparingTo(new BigDecimal("-200.00"));
-            // negative paidAmount is non-zero and less than total → partial payment
-            assertThat(response.status()).isEqualTo("PAGADA_PARCIAL");
-        }
-
-        @Test
-        @DisplayName("should create with zero paid amount")
-        void shouldCreateWithZeroPaidAmount() {
-            var request = new InvoiceRequest(ORDER_ID, ISSUE_DATE, DUE_DATE, BigDecimal.ZERO, null);
-            var order = buildOrder();
-
-            given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
-            given(invoiceRepository.findByOrderId(ORDER_ID)).willReturn(Optional.empty());
-            given(invoiceRepository.count()).willReturn(0L);
-            given(invoiceRepository.save(any(Invoice.class))).willAnswer(i -> i.getArgument(0));
-
-            InvoiceResponse response = invoiceService.create(request);
-
-            assertThat(response.paidAmount()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(response.status()).isEqualTo("PENDIENTE");
+            assertThat(response.paidAmount()).isEqualByComparingTo(paidAmount);
+            assertThat(response.status()).isEqualTo(expectedStatus);
         }
     }
 

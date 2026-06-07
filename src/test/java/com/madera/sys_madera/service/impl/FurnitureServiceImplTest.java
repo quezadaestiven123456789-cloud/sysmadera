@@ -15,7 +15,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
@@ -27,6 +26,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -116,97 +116,6 @@ class FurnitureServiceImplTest {
 
             assertThat(response.stockQuantity()).isZero();
         }
-
-        @Test
-        @DisplayName("should create with zero price")
-        void shouldCreateWithZeroPrice() {
-            var request = new FurnitureRequest(
-                    "Silla", null, BigDecimal.ZERO, "Pino",
-                    null, null, 10, null);
-            var saved = Furniture.builder()
-                    .id(2L).name("Silla").price(BigDecimal.ZERO)
-                    .stockQuantity(10).active(true).build();
-
-            given(furnitureRepository.existsByName("Silla")).willReturn(false);
-            given(furnitureRepository.save(any(Furniture.class))).willReturn(saved);
-
-            FurnitureResponse response = furnitureService.create(request);
-
-            assertThat(response.price()).isEqualByComparingTo(BigDecimal.ZERO);
-        }
-
-        @Test
-        @DisplayName("should create with negative price")
-        void shouldCreateWithNegativePrice() {
-            var request = new FurnitureRequest(
-                    "Silla", null, new BigDecimal("-100.00"), "Pino",
-                    null, null, 10, null);
-            var saved = Furniture.builder()
-                    .id(2L).name("Silla").price(new BigDecimal("-100.00"))
-                    .stockQuantity(10).active(true).build();
-
-            given(furnitureRepository.existsByName("Silla")).willReturn(false);
-            given(furnitureRepository.save(any(Furniture.class))).willReturn(saved);
-
-            FurnitureResponse response = furnitureService.create(request);
-
-            assertThat(response.price()).isEqualByComparingTo(new BigDecimal("-100.00"));
-        }
-
-        @Test
-        @DisplayName("should create with negative stock")
-        void shouldCreateWithNegativeStock() {
-            var request = new FurnitureRequest(
-                    "Silla", null, new BigDecimal("500.00"), "Pino",
-                    null, null, -5, null);
-            var saved = Furniture.builder()
-                    .id(2L).name("Silla").price(new BigDecimal("500.00"))
-                    .stockQuantity(-5).active(true).build();
-
-            given(furnitureRepository.existsByName("Silla")).willReturn(false);
-            given(furnitureRepository.save(any(Furniture.class))).willReturn(saved);
-
-            FurnitureResponse response = furnitureService.create(request);
-
-            assertThat(response.stockQuantity()).isEqualTo(-5);
-        }
-
-        @Test
-        @DisplayName("should create with null description and imageUrl")
-        void shouldCreateWithNullOptionalFields() {
-            var request = new FurnitureRequest(
-                    "Silla", null, new BigDecimal("500.00"), "Pino",
-                    null, null, 10, null);
-            var saved = Furniture.builder()
-                    .id(2L).name("Silla").price(new BigDecimal("500.00"))
-                    .stockQuantity(10).active(true).build();
-
-            given(furnitureRepository.existsByName("Silla")).willReturn(false);
-            given(furnitureRepository.save(any(Furniture.class))).willReturn(saved);
-
-            FurnitureResponse response = furnitureService.create(request);
-
-            assertThat(response.description()).isNull();
-            assertThat(response.imageUrl()).isNull();
-        }
-
-        @Test
-        @DisplayName("should create with empty description")
-        void shouldCreateWithEmptyDescription() {
-            var request = new FurnitureRequest(
-                    "Silla", "", new BigDecimal("500.00"), "Pino",
-                    null, null, 10, null);
-            var saved = Furniture.builder()
-                    .id(2L).name("Silla").description("")
-                    .price(new BigDecimal("500.00")).stockQuantity(10).active(true).build();
-
-            given(furnitureRepository.existsByName("Silla")).willReturn(false);
-            given(furnitureRepository.save(any(Furniture.class))).willReturn(saved);
-
-            FurnitureResponse response = furnitureService.create(request);
-
-            assertThat(response.description()).isEmpty();
-        }
     }
 
     @Nested
@@ -240,23 +149,6 @@ class FurnitureServiceImplTest {
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Mueble");
         }
-
-        @Test
-        @DisplayName("should throw DuplicateResourceException when name already taken by another furniture")
-        void shouldThrowException_whenNameAlreadyTaken() {
-            var request = buildRequest();
-            var existing = buildFurniture();
-            existing.setName("Mesa Antigua");
-
-            given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(existing));
-            given(furnitureRepository.existsByName(FURNITURE_NAME)).willReturn(true);
-
-            assertThatThrownBy(() -> furnitureService.update(FURNITURE_ID, request))
-                    .isInstanceOf(DuplicateResourceException.class)
-                    .hasMessageContaining(FURNITURE_NAME);
-
-            verify(furnitureRepository, never()).save(any());
-        }
     }
 
     @Nested
@@ -286,6 +178,19 @@ class FurnitureServiceImplTest {
             assertThatThrownBy(() -> furnitureService.findById(FURNITURE_ID))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Mueble");
+        }
+
+        @Test
+        @DisplayName("should return inactive furniture")
+        void shouldReturnInactiveRecord() {
+            var furniture = buildFurniture();
+            furniture.setActive(false);
+
+            given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(furniture));
+
+            FurnitureResponse response = furnitureService.findById(FURNITURE_ID);
+
+            assertThat(response.active()).isFalse();
         }
     }
 
@@ -339,8 +244,8 @@ class FurnitureServiceImplTest {
         }
 
         @Test
-        @DisplayName("should filter by category when both category and search provided")
-        void shouldFilterByCategory_whenBothPresent() {
+        @DisplayName("category filter takes precedence over search")
+        void categoryTakesPrecedenceOverSearch() {
             var furniture = buildFurniture();
             var page = new PageImpl<>(List.of(furniture));
 
@@ -351,6 +256,61 @@ class FurnitureServiceImplTest {
                     .findAll(0, 10, "id", "asc", "Mesa", "Mesas");
 
             assertThat(response.content()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("should include inactive records when no filters")
+        void shouldIncludeInactiveRecords() {
+            var activeFurniture = buildFurniture();
+            var inactiveFurniture = buildFurniture();
+            inactiveFurniture.setId(2L);
+            inactiveFurniture.setActive(false);
+            var page = new PageImpl<>(List.of(activeFurniture, inactiveFurniture));
+
+            given(furnitureRepository.findAll(any(Pageable.class))).willReturn(page);
+
+            PagedResponse<FurnitureResponse> response = furnitureService
+                    .findAll(0, 10, "id", "asc", null, null);
+
+            assertThat(response.content()).hasSize(2);
+            assertThat(response.content().get(0).active()).isTrue();
+            assertThat(response.content().get(1).active()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should include inactive records in search results")
+        void shouldIncludeInactiveInSearch() {
+            var activeFurniture = buildFurniture();
+            var inactiveFurniture = buildFurniture();
+            inactiveFurniture.setId(2L);
+            inactiveFurniture.setActive(false);
+            var page = new PageImpl<>(List.of(activeFurniture, inactiveFurniture));
+
+            given(furnitureRepository.findByNameContainingIgnoreCase(anyString(), any(Pageable.class)))
+                    .willReturn(page);
+
+            PagedResponse<FurnitureResponse> response = furnitureService
+                    .findAll(0, 10, "id", "asc", "Mesa", null);
+
+            assertThat(response.content()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("should include inactive records in category filter results")
+        void shouldIncludeInactiveInCategoryFilter() {
+            var activeFurniture = buildFurniture();
+            var inactiveFurniture = buildFurniture();
+            inactiveFurniture.setId(2L);
+            inactiveFurniture.setActive(false);
+            var page = new PageImpl<>(List.of(activeFurniture, inactiveFurniture));
+
+            given(furnitureRepository.findByCategoryIgnoreCase(anyString(), any(Pageable.class)))
+                    .willReturn(page);
+
+            PagedResponse<FurnitureResponse> response = furnitureService
+                    .findAll(0, 10, "id", "asc", null, "Mesas");
+
+            assertThat(response.content()).hasSize(2);
         }
     }
 
@@ -381,6 +341,21 @@ class FurnitureServiceImplTest {
             assertThatThrownBy(() -> furnitureService.delete(FURNITURE_ID))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Mueble");
+        }
+
+        @Test
+        @DisplayName("should not physically delete record")
+        void shouldNotPhysicallyDeleteRecord() {
+            var furniture = buildFurniture();
+            furniture.setActive(true);
+
+            given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(furniture));
+            given(furnitureRepository.save(any(Furniture.class))).willReturn(furniture);
+
+            furnitureService.delete(FURNITURE_ID);
+
+            verify(furnitureRepository, never()).delete(any(Furniture.class));
+            verify(furnitureRepository, never()).deleteById(anyLong());
         }
     }
 

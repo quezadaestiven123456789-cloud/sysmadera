@@ -155,7 +155,12 @@ class OrderControllerTest {
                             .param("size", "10")
                             .param("sort", "id")
                             .param("direction", "asc"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(1))
+                    .andExpect(jsonPath("$.content[0].clientName").value(CLIENT_NAME))
+                    .andExpect(jsonPath("$.totalElements").value(1))
+                    .andExpect(jsonPath("$.totalPages").value(1))
+                    .andExpect(jsonPath("$.page").value(0));
         }
 
         @Test
@@ -166,7 +171,11 @@ class OrderControllerTest {
 
             mockMvc.perform(get(BASE_PATH)
                             .param("status", "PENDIENTE"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(0))
+                    .andExpect(jsonPath("$.totalElements").value(0))
+                    .andExpect(jsonPath("$.totalPages").value(0))
+                    .andExpect(jsonPath("$.page").value(0));
         }
     }
 
@@ -181,7 +190,12 @@ class OrderControllerTest {
                     .willReturn(new PagedResponse<>(List.of(buildResponse()), 0, 10, 1L, 1, true));
 
             mockMvc.perform(get(BASE_PATH + "/cliente/{clientId}", CLIENT_ID))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(1))
+                    .andExpect(jsonPath("$.content[0].clientName").value(CLIENT_NAME))
+                    .andExpect(jsonPath("$.totalElements").value(1))
+                    .andExpect(jsonPath("$.totalPages").value(1))
+                    .andExpect(jsonPath("$.page").value(0));
         }
     }
 

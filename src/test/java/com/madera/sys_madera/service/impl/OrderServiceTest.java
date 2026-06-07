@@ -30,9 +30,11 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +61,7 @@ class OrderServiceTest {
     private static final BigDecimal FURNITURE_PRICE = new BigDecimal("250.00");
     private static final Integer FURNITURE_STOCK = 10;
     private static final int QUANTITY = 2;
+    private static final int EXPECTED_STOCK_AFTER = FURNITURE_STOCK - QUANTITY;
 
     @Nested
     @DisplayName("create")
@@ -91,8 +94,176 @@ class OrderServiceTest {
 
             ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
             verify(orderRepository).save(captor.capture());
-            assertThat(captor.getValue().getClient().getId()).isEqualTo(CLIENT_ID);
-            assertThat(captor.getValue().getOrderDetails()).hasSize(1);
+            Order savedOrder = captor.getValue();
+            assertThat(savedOrder.getClient().getId()).isEqualTo(CLIENT_ID);
+            assertThat(savedOrder.getOrderDetails()).hasSize(1);
+
+            Furniture savedFurniture = savedOrder.getOrderDetails().get(0).getFurniture();
+            assertThat(savedFurniture.getStockQuantity()).isEqualTo(EXPECTED_STOCK_AFTER);
+        }
+
+        @Test
+        @DisplayName("should reduce stock by the ordered quantity")
+        void shouldReduceStock_whenCreatingOrder() {
+            var request = buildRequest();
+            var client = buildClient();
+            var furniture = buildFurniture();
+            var order = buildOrder(client, furniture);
+
+            given(clientRepository.findById(CLIENT_ID)).willReturn(Optional.of(client));
+            given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(furniture));
+            given(orderRepository.count()).willReturn(0L);
+            given(orderRepository.save(any(Order.class))).willReturn(order);
+
+            orderService.create(request);
+
+            ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
+            verify(orderRepository).save(captor.capture());
+
+            OrderDetail savedDetail = captor.getValue().getOrderDetails().get(0);
+            Furniture resultFurniture = savedDetail.getFurniture();
+
+            assertEquals(EXPECTED_STOCK_AFTER, resultFurniture.getStockQuantity(),
+                    "El stock del mueble debe reducirse en la cantidad ordenada");
+        }
+
+        @Test
+        @DisplayName("should not save order nor furniture when stock is insufficient")
+        void shouldNotSave_whenInsufficientStock() {
+            var request = new OrderRequest(CLIENT_ID, "Nota",
+                    List.of(new OrderRequest.OrderDetailRequest(FURNITURE_ID, 99)));
+            var client = buildClient();
+            var furniture = buildFurniture();
+            furniture.setStockQuantity(5);
+
+            given(clientRepository.findById(CLIENT_ID)).willReturn(Optional.of(client));
+            given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(furniture));
+
+            assertThatThrownBy(() -> orderService.create(request))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("Stock insuficiente")
+                    .hasMessageContaining("5")
+                    .hasMessageContaining("99");
+
+            verify(orderRepository, never()).save(any());
+            verify(furnitureRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should throw exception without saving when stock is exactly insufficient")
+        void shouldThrowException_whenStockExactlyOneLess() {
+            var request = new OrderRequest(CLIENT_ID, "Nota",
+                    List.of(new OrderRequest.OrderDetailRequest(FURNITURE_ID, FURNITURE_STOCK + 1)));
+            var client = buildClient();
+            var furniture = buildFurniture();
+
+            given(clientRepository.findById(CLIENT_ID)).willReturn(Optional.of(client));
+            given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(furniture));
+
+            assertThatThrownBy(() -> orderService.create(request))
+                    .isInstanceOf(BadRequestException.class);
+
+            verify(orderRepository, never()).save(any());
+            verify(furnitureRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should reduce stock to zero when ordering exact available quantity")
+        void shouldReduceStockToZero_whenOrderingFullStock() {
+            var request = new OrderRequest(CLIENT_ID, "Nota",
+                    List.of(new OrderRequest.OrderDetailRequest(FURNITURE_ID, FURNITURE_STOCK)));
+            var client = buildClient();
+            var furniture = buildFurniture();
+            var order = buildOrder(client, furniture);
+
+            given(clientRepository.findById(CLIENT_ID)).willReturn(Optional.of(client));
+            given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(furniture));
+            given(orderRepository.count()).willReturn(0L);
+            given(orderRepository.save(any(Order.class))).willReturn(order);
+
+            orderService.create(request);
+
+            ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
+            verify(orderRepository).save(captor.capture());
+
+            Furniture resultFurniture = captor.getValue().getOrderDetails().get(0).getFurniture();
+            assertEquals(0, resultFurniture.getStockQuantity(),
+                    "El stock debe quedar en cero cuando se ordena la cantidad exacta disponible");
+        }
+
+        @Test
+        @DisplayName("should reduce stock correctly when ordering multiple furniture items")
+        void shouldReduceStock_whenMultipleFurnitureItems() {
+            Long secondFurnitureId = 2L;
+            String secondFurnitureName = "Silla Pino";
+            BigDecimal secondFurniturePrice = new BigDecimal("85.00");
+            int secondFurnitureStock = 25;
+            int secondQuantity = 5;
+
+            var request = new OrderRequest(CLIENT_ID, "Nota",
+                    List.of(
+                            new OrderRequest.OrderDetailRequest(FURNITURE_ID, QUANTITY),
+                            new OrderRequest.OrderDetailRequest(secondFurnitureId, secondQuantity)
+                    ));
+            var client = buildClient();
+            var firstFurniture = buildFurniture();
+            var secondFurniture = Furniture.builder()
+                    .id(secondFurnitureId)
+                    .name(secondFurnitureName)
+                    .price(secondFurniturePrice)
+                    .stockQuantity(secondFurnitureStock)
+                    .build();
+
+            var detail1 = OrderDetail.builder()
+                    .id(1L)
+                    .furniture(firstFurniture)
+                    .quantity(QUANTITY)
+                    .unitPrice(FURNITURE_PRICE)
+                    .subtotal(FURNITURE_PRICE.multiply(BigDecimal.valueOf(QUANTITY)))
+                    .build();
+            var detail2 = OrderDetail.builder()
+                    .id(2L)
+                    .furniture(secondFurniture)
+                    .quantity(secondQuantity)
+                    .unitPrice(secondFurniturePrice)
+                    .subtotal(secondFurniturePrice.multiply(BigDecimal.valueOf(secondQuantity)))
+                    .build();
+
+            var order = Order.builder()
+                    .id(ORDER_ID)
+                    .orderNumber("ORD-20250601-0001")
+                    .status(EOrderStatus.PENDIENTE)
+                    .totalAmount(FURNITURE_PRICE.multiply(BigDecimal.valueOf(QUANTITY))
+                            .add(secondFurniturePrice.multiply(BigDecimal.valueOf(secondQuantity))))
+                    .notes("Nota del pedido")
+                    .client(client)
+                    .orderDetails(List.of(detail1, detail2))
+                    .build();
+            detail1.setOrder(order);
+            detail2.setOrder(order);
+
+            given(clientRepository.findById(CLIENT_ID)).willReturn(Optional.of(client));
+            given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(firstFurniture));
+            given(furnitureRepository.findById(secondFurnitureId)).willReturn(Optional.of(secondFurniture));
+            given(orderRepository.count()).willReturn(0L);
+            given(orderRepository.save(any(Order.class))).willReturn(order);
+
+            orderService.create(request);
+
+            ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
+            verify(orderRepository).save(captor.capture());
+            verify(furnitureRepository, times(2)).findById(any());
+
+            List<OrderDetail> savedDetails = captor.getValue().getOrderDetails();
+            assertThat(savedDetails).hasSize(2);
+
+            Furniture savedFirst = savedDetails.get(0).getFurniture();
+            Furniture savedSecond = savedDetails.get(1).getFurniture();
+
+            assertEquals(FURNITURE_STOCK - QUANTITY, savedFirst.getStockQuantity(),
+                    "Stock del primer mueble debe reducirse");
+            assertEquals(secondFurnitureStock - secondQuantity, savedSecond.getStockQuantity(),
+                    "Stock del segundo mueble debe reducirse");
         }
 
         @Test
@@ -107,6 +278,7 @@ class OrderServiceTest {
                     .hasMessageContaining("Cliente");
 
             verify(orderRepository, never()).save(any());
+            verify(furnitureRepository, never()).save(any());
         }
 
         @Test
@@ -121,6 +293,7 @@ class OrderServiceTest {
                     .hasMessageContaining("al menos un detalle");
 
             verify(orderRepository, never()).save(any());
+            verify(furnitureRepository, never()).save(any());
         }
 
         @Test
@@ -140,6 +313,7 @@ class OrderServiceTest {
                     .hasMessageContaining("Stock insuficiente");
 
             verify(orderRepository, never()).save(any());
+            verify(furnitureRepository, never()).save(any());
         }
 
         @Test
@@ -156,6 +330,7 @@ class OrderServiceTest {
                     .hasMessageContaining("Mueble");
 
             verify(orderRepository, never()).save(any());
+            verify(furnitureRepository, never()).save(any());
         }
     }
 

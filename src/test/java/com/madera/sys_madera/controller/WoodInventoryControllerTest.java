@@ -207,7 +207,12 @@ class WoodInventoryControllerTest {
             mockMvc.perform(get(BASE_PATH)
                             .param("page", "0")
                             .param("size", "10"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(1))
+                    .andExpect(jsonPath("$.content[0].woodType").value(WOOD_TYPE))
+                    .andExpect(jsonPath("$.totalElements").value(1))
+                    .andExpect(jsonPath("$.totalPages").value(1))
+                    .andExpect(jsonPath("$.page").value(0));
         }
 
         @Test
@@ -218,7 +223,11 @@ class WoodInventoryControllerTest {
 
             mockMvc.perform(get(BASE_PATH)
                             .param("search", "Roble"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(0))
+                    .andExpect(jsonPath("$.totalElements").value(0))
+                    .andExpect(jsonPath("$.totalPages").value(0))
+                    .andExpect(jsonPath("$.page").value(0));
         }
     }
 

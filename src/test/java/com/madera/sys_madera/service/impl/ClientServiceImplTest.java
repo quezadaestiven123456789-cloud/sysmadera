@@ -10,6 +10,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -71,31 +73,25 @@ class ClientServiceImplTest {
             assertThat(captor.getValue().getEmail()).isEqualTo(CLIENT_EMAIL);
         }
 
-        @Test
-        @DisplayName("should throw DuplicateResourceException when email already exists")
-        void shouldThrowException_whenEmailAlreadyExists() {
+        @ParameterizedTest
+        @CsvSource({
+            "email, juan@example.com",
+            "rfc, JUPE800101"
+        })
+        @DisplayName("should throw DuplicateResourceException when field already exists")
+        void shouldThrowException_whenDuplicateFieldExists(String field, String expectedContent) {
             var request = buildRequest();
 
-            given(clientRepository.existsByEmail(CLIENT_EMAIL)).willReturn(true);
+            if ("email".equals(field)) {
+                given(clientRepository.existsByEmail(CLIENT_EMAIL)).willReturn(true);
+            } else {
+                given(clientRepository.existsByEmail(CLIENT_EMAIL)).willReturn(false);
+                given(clientRepository.existsByRfc(CLIENT_RFC)).willReturn(true);
+            }
 
             assertThatThrownBy(() -> clientService.create(request))
                     .isInstanceOf(DuplicateResourceException.class)
-                    .hasMessageContaining(CLIENT_EMAIL);
-
-            verify(clientRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("should throw DuplicateResourceException when RFC already exists")
-        void shouldThrowException_whenRfcAlreadyExists() {
-            var request = buildRequest();
-
-            given(clientRepository.existsByEmail(CLIENT_EMAIL)).willReturn(false);
-            given(clientRepository.existsByRfc(CLIENT_RFC)).willReturn(true);
-
-            assertThatThrownBy(() -> clientService.create(request))
-                    .isInstanceOf(DuplicateResourceException.class)
-                    .hasMessageContaining(CLIENT_RFC);
+                    .hasMessageContaining(expectedContent);
 
             verify(clientRepository, never()).save(any());
         }
