@@ -59,6 +59,8 @@ public class OrderServiceImpl implements OrderService {
                                 + ", solicitado: " + detailRequest.quantity());
             }
 
+            furniture.setStockQuantity(furniture.getStockQuantity() - detailRequest.quantity());
+
             BigDecimal subtotal = furniture.getPrice()
                     .multiply(BigDecimal.valueOf(detailRequest.quantity()));
 

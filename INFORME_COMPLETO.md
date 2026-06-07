@@ -1,666 +1,517 @@
-# INFORME COMPLETO DEL PROYECTO: WoodManager (sys_madera)
+# WoodManager — Informe Completo del Proyecto
 
-> **Fecha:** 02/06/2026
-> **Propósito:** Documentación completa del sistema para análisis y mejora con asistencia de IA
-
----
-
-## 1. DATOS GENERALES
-
-| Campo | Valor |
-|-------|-------|
-| **Nombre** | WoodManager - Sistema de Gestión de Carpintería |
-| **Artifact** | `com.madera:sys_madera:1.0.0` |
-| **Java** | 17 |
-| **Spring Boot** | 3.5.0 |
-| **Base de datos** | MySQL 8+ |
-| **Build** | Maven |
-| **Tipo** | Monolito (backend REST + frontend estático embebido) |
+**Sistema de Gestión de Talleres de Carpintería**  
+*Versión: 1.0.0 | Spring Boot 3.5.0 | Java 17*
 
 ---
 
-## 2. ESTRUCTURA COMPLETA DEL PROYECTO
+## Índice
+
+1. [Resumen Ejecutivo](#1-resumen-ejecutivo)
+2. [Stack Tecnológico](#2-stack-tecnológico)
+3. [Estructura del Proyecto](#3-estructura-del-proyecto)
+4. [Arquitectura y Diseño](#4-arquitectura-y-diseño)
+5. [Módulo de Clientes — Análisis Detallado](#5-módulo-de-clientes--análisis-detallado)
+6. [Suite de Pruebas](#6-suite-de-pruebas)
+7. [Problemas Conocidos y Limitaciones](#7-problemas-conocidos-y-limitaciones)
+8. [Configuración y Despliegue](#8-configuración-y-despliegue)
+9. [Métricas de Código](#9-métricas-de-código)
+10. [Guía de Contribución](#10-guía-de-contribución)
+
+---
+
+## 1. Resumen Ejecutivo
+
+WoodManager es una aplicación web SaaS profesional para la gestión integral de talleres de carpintería. Proporciona funcionalidades para:
+
+- **Gestión de usuarios y autenticación** (JWT, roles ADMIN/EMPLEADO/CLIENTE)
+- **Catálogo de clientes** (CRUD completo con búsqueda paginada)
+- **Inventario de madera** (control de existencias, tipos, proveedores)
+- **Catálogo de muebles** (productos, precios, stock)
+- **Pedidos** (creación, seguimiento de estados, detalles)
+- **Facturación** (generación, estados de pago)
+- **Reportes y dashboard** (estadísticas, productos más vendidos)
+
+El frontend es HTML/CSS/JS plano con diseño dark-mode premium (Inspiración: Material Design + Ant Design). El backend expone una API RESTful bajo el prefijo `/api/v1`.
+
+---
+
+## 2. Stack Tecnológico
+
+### Backend
+
+| Componente | Versión |
+|---|---|
+| Java | 17 |
+| Spring Boot | 3.5.0 |
+| Spring Data JPA | (incluido en Boot) |
+| Spring Security | (incluido en Boot) |
+| Spring Validation | (incluido en Boot) |
+| Spring Actuator | (incluido en Boot) |
+| MySQL Connector | 8.x (runtime) |
+| H2 Database | (test scope) |
+| JJWT (JWT) | 0.12.6 |
+| Springdoc OpenAPI | 2.8.5 |
+| Lombok | (optional) |
+| Hibernate | 6.x (via Boot) |
+
+### Frontend
+
+| Componente | Detalle |
+|---|---|
+| HTML5 | 10 páginas en `src/main/resources/static/producto/` |
+| CSS3 | `woodmanager.css` — diseño dark-mode system |
+| JavaScript | `api.js` (cliente HTTP), `woodmanager.js` (lógica UI) |
+| Iconos | Font Awesome 6 |
+| Fuentes | Inter (headings/body), JetBrains Mono (monospace) |
+
+### Herramientas de Desarrollo
+
+| Herramienta | Propósito |
+|---|---|
+| Maven Wrapper | Build y gestión de dependencias |
+| Spring Boot DevTools | Recarga en caliente en desarrollo |
+| Lombok | Reducción de boilerplate |
+| Spring Security Test | Soporte para pruebas de seguridad |
+| JUnit 5 + Mockito | Pruebas unitarias y de integración |
+| AssertJ | Aserciones fluidas |
+| H2 Database | Base de datos embebida para pruebas |
+
+---
+
+## 3. Estructura del Proyecto
 
 ```
 sys_madera/
 ├── pom.xml
-├── DESIGN.md                          # Design system (tema oscuro, paleta, tipografía)
-├── HELP.md                            # Documentación genérica de Spring Boot
-├── mvnw / mvnw.cmd                    # Maven Wrapper
-├── .gitignore
-├── .gitattributes
-├── .mvn/                              # Config Maven Wrapper
-├── .vscode/                           # Config VS Code
-├── sys_madera/                        # ⚠️ Directorio duplicado (contiene .gitignore, HELP.md, mvnw)
+├── mvnw / mvnw.cmd
+├── DESIGN.md
+├── HELP.md
+├── INFORME_COMPLETO.md          ← Este archivo
 │
 ├── src/main/java/com/madera/sys_madera/
-│   ├── SysMaderaApplication.java      # Entry point (@SpringBootApplication)
+│   ├── SysMaderaApplication.java
 │   │
 │   ├── config/
-│   │   ├── WebConfig.java             # @EnableJpaAuditing + prefix /api/v1 para @RestController
-│   │   ├── OpenApiConfig.java         # Swagger/OpenAPI con seguridad Bearer JWT
-│   │   └── DataInitializer.java       # CommandLineRunner: seed de roles (ADMIN, EMPLEADO, CLIENTE)
+│   │   ├── WebConfig.java           ← Path prefix `/api/v1` para @RestController
+│   │   ├── JpaConfig.java           ← @EnableJpaAuditing (separado de WebConfig)
+│   │   ├── OpenApiConfig.java       ← Swagger/OpenAPI 3
+│   │   └── DataInitializer.java     ← Seeds roles en BD al iniciar
 │   │
 │   ├── model/
-│   │   ├── User.java                  # Usuarios del sistema
-│   │   ├── Role.java                  # Roles (ADMIN, EMPLEADO, CLIENTE)
-│   │   ├── ERole.java                 # Enum de roles
-│   │   ├── Client.java                # Clientes del taller
-│   │   ├── Furniture.java             # Catálogo de muebles
-│   │   ├── Order.java                 # Pedidos/órdenes
-│   │   ├── OrderDetail.java           # Detalle de pedidos (productos individuales)
-│   │   ├── EOrderStatus.java          # Enum: PENDIENTE, EN_PRODUCCION, COMPLETADO, ENTREGADO, CANCELADO
-│   │   ├── Invoice.java               # Facturas
-│   │   ├── EInvoiceStatus.java        # Enum: PENDIENTE, PAGADA_PARCIAL, PAGADA, CANCELADA, VENCIDA
-│   │   ├── WoodInventory.java         # Inventario de madera
-│   │   └── WoodSurplus.java           # Sobrantes de madera
+│   │   ├── User.java, Role.java, ERole.java
+│   │   ├── Client.java
+│   │   ├── Furniture.java
+│   │   ├── Order.java, OrderDetail.java, EOrderStatus.java
+│   │   ├── Invoice.java, EInvoiceStatus.java
+│   │   ├── WoodInventory.java
+│   │   └── WoodSurplus.java
 │   │
 │   ├── repository/
 │   │   ├── UserRepository.java
 │   │   ├── RoleRepository.java
 │   │   ├── ClientRepository.java
 │   │   ├── FurnitureRepository.java
-│   │   ├── OrderRepository.java
-│   │   ├── OrderDetailRepository.java
+│   │   ├── OrderRepository.java, OrderDetailRepository.java
 │   │   ├── InvoiceRepository.java
 │   │   ├── WoodInventoryRepository.java
 │   │   └── WoodSurplusRepository.java
 │   │
 │   ├── dto/
-│   │   ├── request/
-│   │   │   ├── LoginRequest.java      # username, password
-│   │   │   ├── RegisterRequest.java   # username, email, password, firstName, lastName, roles
-│   │   │   ├── ClientRequest.java     # name, email, phone, address, rfc
-│   │   │   ├── FurnitureRequest.java  # name, description, price, woodType, dimensions, category, stockQuantity, imageUrl
-│   │   │   ├── OrderRequest.java      # clientId, notes, List<OrderDetailRequest>
-│   │   │   │   └── OrderDetailRequest (inner record) # furnitureId, quantity
-│   │   │   ├── InvoiceRequest.java    # orderId, issueDate, dueDate, paidAmount, notes
-│   │   │   └── WoodInventoryRequest.java # woodType, quantity, unit, unitPrice, supplier, description, minimumStock
-│   │   │
-│   │   └── response/
-│   │       ├── AuthResponse.java      # token, type, id, username, email, roles
-│   │       ├── ClientResponse.java
-│   │       ├── FurnitureResponse.java
-│   │       ├── OrderResponse.java     # incluye List<OrderDetailResponse>
-│   │       ├── InvoiceResponse.java   # incluye balance calculado
-│   │       ├── WoodInventoryResponse.java # incluye totalValue y lowStock calculados
-│   │       ├── PagedResponse<T>.java  # content, page, size, totalElements, totalPages, last
-│   │       └── MessageResponse.java   # message
-│   │
-│   ├── service/ (interfaces)
-│   │   ├── AuthService.java
-│   │   ├── ClientService.java
-│   │   ├── FurnitureService.java
-│   │   ├── OrderService.java
-│   │   ├── InvoiceService.java
-│   │   ├── WoodInventoryService.java
-│   │   ├── WoodSurplusService.java
-│   │   ├── DashboardService.java
-│   │   └── ReportService.java
-│   │
-│   ├── service/impl/
-│   │   ├── AuthServiceImpl.java
-│   │   ├── ClientServiceImpl.java
-│   │   ├── FurnitureServiceImpl.java
-│   │   ├── OrderServiceImpl.java
-│   │   ├── InvoiceServiceImpl.java
-│   │   ├── WoodInventoryServiceImpl.java
-│   │   ├── WoodSurplusServiceImpl.java
-│   │   ├── DashboardServiceImpl.java
-│   │   └── ReportServiceImpl.java
-│   │
-│   ├── controller/
-│   │   ├── AuthController.java        # POST /auth/login, POST /auth/register
-│   │   ├── ClientController.java      # CRUD /clientes
-│   │   ├── FurnitureController.java   # CRUD /muebles (soft-delete)
-│   │   ├── OrderController.java       # CRUD /pedidos + PATCH estado
-│   │   ├── InvoiceController.java     # CRUD /facturas + POST registro pago
-│   │   ├── WoodInventoryController.java # CRUD /inventario-madera + GET bajo-stock
-│   │   ├── DashboardController.java   # GET /dashboard/admin, GET /dashboard/empleado
-│   │   └── ReportController.java      # GET /reportes/ventas, /inventario, /mas-vendidos
-│   │
-│   ├── security/
-│   │   ├── config/SecurityConfig.java        # SecurityFilterChain, CORS, JWT filter
-│   │   ├── CustomUserDetailsService.java     # UserDetailsService impl
-│   │   └── jwt/
-│   │       ├── JwtTokenProvider.java         # Generar/validar JWT (HMAC-SHA, 24h exp)
-│   │       ├── JwtAuthenticationFilter.java  # Filtro OncePerRequestFilter
-│   │       └── JwtEntryPoint.java            # AuthenticationEntryPoint (401 JSON)
+│   │   ├── request/  (7 DTOs: Login, Register, Client, Furniture, Order, Invoice, WoodInventory)
+│   │   └── response/ (10 DTOs: Auth, Client, Furniture, Order, Invoice, WoodInventory,
+│   │                    PagedResponse<T>, MessageResponse, TopSellingFurnitureItem,
+│   │                    WoodInventoryReportItem)
 │   │
 │   ├── exception/
 │   │   ├── AppException.java
 │   │   ├── BadRequestException.java
 │   │   ├── DuplicateResourceException.java
 │   │   ├── ResourceNotFoundException.java
-│   │   └── GlobalExceptionHandler.java       # @RestControllerAdvice + ErrorResponse record
+│   │   └── GlobalExceptionHandler.java  ← @RestControllerAdvice
 │   │
-│   └── util/
-│       └── Constants.java            # Paginación: DEFAULT_PAGE, SIZE, SORT, DIR; Roles
+│   ├── security/
+│   │   ├── config/SecurityConfig.java   ← @EnableMethodSecurity, filtro JWT
+│   │   ├── jwt/
+│   │   │   ├── JwtTokenProvider.java
+│   │   │   ├── JwtAuthenticationFilter.java
+│   │   │   └── JwtEntryPoint.java
+│   │   └── CustomUserDetailsService.java
+│   │
+│   ├── service/
+│   │   ├── (9 interfaces: Auth, Client, Dashboard, Furniture, Invoice,
+│   │   │    Order, Report, WoodInventory, WoodSurplus)
+│   │   └── impl/ (9 implementaciones)
+│   │
+│   └── util/Constants.java
 │
 ├── src/main/resources/
-│   ├── application.properties        # Puerto 8080, Jackson config, profile=dev
-│   ├── application-dev.properties    # MySQL local, JPA ddl-auto=update, JWT secret hardcodeado
-│   ├── application-prod.properties   # MySQL + SSL, JPA ddl-auto=validate, JWT secret en variable entorno
-│   │
+│   ├── application.properties
+│   ├── application-dev.properties      ← MySQL, JWT, logging
+│   ├── application-prod.properties
 │   └── static/
-│       ├── css/
-│       │   └── woodmanager.css       # 1202 líneas - diseño system completo (dark theme)
-│       ├── js/
-│       │   ├── api.js                # 212 líneas - cliente HTTP con fetch, JWT en localStorage
-│       │   └── woodmanager.js        # 251 líneas - sidebar, dropdowns, Chart.js, utilidades
-│       │
-│       └── producto/                 # 10 páginas HTML estáticas
-│           ├── login.html
-│           ├── register.html
-│           ├── dashboard.html
-│           ├── pedidos.html
-│           ├── catalogo-muebles.html
-│           ├── clientes.html
-│           ├── inventario-madera.html
-│           ├── facturacion.html
-│           ├── reportes.html
-│           └── perfil.html
+│       ├── css/woodmanager.css
+│       ├── js/api.js, woodmanager.js
+│       └── producto/ (10 páginas HTML)
 │
-├── src/test/java/com/madera/sys_madera/
-│   └── SysMaderaApplicationTests.java  # Único test: contextLoads (placeholder)
-│
-└── target/                           # Build output
+└── src/test/
+    ├── java/com/madera/sys_madera/
+    │   ├── SysMaderaApplicationTests.java
+    │   ├── service/impl/
+    │   │   ├── ClientServiceImplTest.java    ← 10 tests
+    │   │   └── OrderServiceTest.java         ← 13 tests (preexistente)
+    │   ├── repository/
+    │   │   └── ClientRepositoryTest.java     ← 18 tests
+    │   └── controller/
+    │       └── ClientControllerTest.java     ← 15 tests
+    └── resources/application.properties      ← H2 dialect, ddl-auto=create-drop
 ```
 
 ---
 
-## 3. DIAGRAMA ENTIDAD-RELACIÓN (MODELO DE DATOS)
+## 4. Arquitectura y Diseño
+
+### 4.1 Capas
 
 ```
-┌─────────────┐       ┌─────────────┐
-│    User     │ N──M  │    Role     │
-│─────────────│       │─────────────│
-│ id          │       │ id          │
-│ username    │       │ name (enum) │
-│ email       │       └─────────────┘
-│ password    │
-│ first_name  │
-│ last_name   │
-│ enabled     │
-│ created_at  │
-│ updated_at  │
-└──────┬──────┘
-       │ 1:1
-       ▼
-┌──────────────┐       ┌─────────────────┐       ┌──────────────────┐
-│   Client     │ 1──N  │     Order       │ 1──N  │   OrderDetail    │
-│──────────────│       │─────────────────│       │──────────────────│
-│ id           │       │ id              │       │ id               │
-│ name         │       │ order_number    │       │ quantity         │
-│ email        │       │ status (enum)   │       │ unit_price       │
-│ phone        │       │ total_amount    │       │ subtotal         │
-│ address      │       │ notes           │       │ order_id (FK)    │
-│ rfc          │       │ client_id (FK)  │       │ furniture_id (FK)│
-│ user_id (FK) │       │ created_at      │       └────────┬─────────┘
-│ created_at   │       │ updated_at      │                │ N:1
-│ updated_at   │       └────────┬────────┘                ▼
-└──────────────┘                │ 1:1            ┌──────────────────┐
-                                ▼                │   Furniture      │
-                        ┌──────────────┐         │──────────────────│
-                        │   Invoice    │         │ id               │
-                        │──────────────│         │ name             │
-                        │ id           │         │ description      │
-                        │ invoice_num  │         │ price            │
-                        │ issue_date   │         │ wood_type        │
-                        │ due_date     │         │ dimensions       │
-                        │ total_amount │         │ category         │
-                        │ paid_amount  │         │ stock_quantity   │
-                        │ status (enum)│         │ active (soft-del)│
-                        │ notes        │         │ image_url        │
-                        │ order_id(FK) │         │ created_at       │
-                        │ created_at   │         │ updated_at       │
-                        │ updated_at   │         └──────────────────┘
-                        └──────────────┘
-
-┌──────────────────┐       ┌──────────────────┐
-│  WoodInventory   │ 1──N  │   WoodSurplus    │
-│──────────────────│       │──────────────────│
-│ id               │       │ id               │
-│ wood_type        │       │ wood_type        │
-│ quantity         │       │ quantity         │
-│ unit             │       │ unit             │
-│ unit_price       │       │ dimensions       │
-│ supplier         │       │ description      │
-│ description      │       │ available        │
-│ minimum_stock    │       │ wood_inventory_id│
-│ created_at       │       │ created_at       │
-│ updated_at       │       │ updated_at       │
-└──────────────────┘       └──────────────────┘
+Cliente (HTML/JS) → Controller (API REST) → Service (negocio) → Repository (JPA) → BD (MySQL)
+                        ↕                           ↕
+                  GlobalExceptionHandler    DTOs (Request/Response)
 ```
+
+### 4.2 Patrón de Prefijo de Rutas
+
+`WebConfig` implementa `WebMvcConfigurer.configurePathMatch()` para añadir automáticamente el prefijo `/api/v1` a todos los `@RestController`. Esto evita tener que escribir `/api/v1` en cada `@RequestMapping`.
+
+```java
+configurer.addPathPrefix("/api/v1",
+    clazz -> AnnotatedElementUtils.hasAnnotation(clazz, RestController.class));
+```
+
+### 4.3 Seguridad
+
+- **Autenticación**: JWT (Bearer token) con 24h de expiración
+- **Roles**: ADMIN, EMPLEADO, CLIENTE
+- **Autorización**: `@PreAuthorize` en métodos de controller + `@EnableMethodSecurity`
+- **Filtro**: `JwtAuthenticationFilter` (OncePerRequestFilter) extrae token, valida, y establece `SecurityContext`
+- **CORS**: Permitido desde cualquier origen, métodos estándar HTTP
+- **Endpoints públicos**: `/api/v1/auth/**`, `/swagger-ui/**`, `/v3/api-docs/**`, `/actuator/health`
+
+### 4.4 Mapeo de la Base de Datos
+
+| Tabla | Entidad | Relaciones |
+|---|---|---|
+| `users` | User | 1:1 → Client, M:M → roles |
+| `roles` | Role | M:M → users |
+| `user_roles` | (Join Table) | users ↔ roles |
+| `clients` | Client | 1:1 → User, 1:M → orders |
+| `furniture` | Furniture | 1:M → order_details |
+| `orders` | Order | M:1 → Client, 1:1 → Invoice, 1:M → order_details |
+| `order_details` | OrderDetail | M:1 → Order, M:1 → Furniture |
+| `invoices` | Invoice | 1:1 → Order |
+| `wood_inventory` | WoodInventory | 1:M → WoodSurplus |
+| `wood_surplus` | WoodSurplus | M:1 → WoodInventory |
+
+### 4.5 Auditoría (JPA Auditing)
+
+Las entidades `Client`, `User`, `Furniture`, `Order`, `Invoice`, `WoodInventory`, `WoodSurplus` usan `@CreatedDate` y `@LastModifiedDate` con `@EntityListeners(AuditingEntityListener.class)`.
+
+La activación se realiza mediante `@EnableJpaAuditing` en una clase `@Configuration` separada (`JpaConfig`).
 
 ---
 
-## 4. STACK TECNOLÓGICO DETALLADO
+## 5. Módulo de Clientes — Análisis Detallado
 
-| Tecnología | Versión | Propósito |
-|------------|---------|-----------|
-| **Java** | 17 | Lenguaje (Records, Stream API, var, switch expressions) |
-| **Spring Boot** | 3.5.0 | Framework principal |
-| **Spring Data JPA** | (Hibernate 6.x) | ORM, repositorios automáticos |
-| **Spring Security** | 6.x | Autenticación JWT + autorización por roles |
-| **Spring Validation** | Jakarta Bean Validation 3.0 | Validación de DTOs con `@Valid` |
-| **Spring Actuator** | - | Endpoint `/actuator/health` |
-| **MySQL Connector** | 8.x (mysql-connector-j) | Driver MySQL |
-| **JJWT** | 0.12.6 | Creación y validación de tokens JWT |
-| **SpringDoc OpenAPI** | 2.8.5 | Swagger UI en `/swagger-ui.html` |
-| **Lombok** | Última | `@Data`, `@Builder`, `@RequiredArgsConstructor`, `@Slf4j` |
-| **Bootstrap 5** | 5.3.3 | Framework CSS frontend |
-| **Font Awesome 6** | 6.5.0 | Iconos |
-| **Chart.js** | 4.4 | Gráficos en dashboard |
-| **Maven** | - | Build y dependencias |
+### 5.1 Endpoints
 
----
+| Método | Ruta | Roles | Descripción |
+|---|---|---|---|
+| `POST` | `/api/v1/clientes` | ADMIN, EMPLEADO | Crear cliente |
+| `GET` | `/api/v1/clientes/{id}` | ADMIN, EMPLEADO, CLIENTE | Obtener por ID |
+| `GET` | `/api/v1/clientes` | ADMIN, EMPLEADO | Listar (paginado, filtro por nombre) |
+| `PUT` | `/api/v1/clientes/{id}` | ADMIN, EMPLEADO | Actualizar cliente |
+| `DELETE` | `/api/v1/clientes/{id}` | ADMIN | Eliminar cliente |
 
-## 5. SEGURIDAD
+### 5.2 Flujo de Creación
 
-### 5.1 Autenticación
-- **Mecanismo:** JWT (JSON Web Token) con HMAC-SHA256
-- **Tipo:** Bearer token en header `Authorization`
-- **Expiración:** 24 horas (configurable via `app.jwt.expiration-ms`)
-- **Almacenamiento frontend:** `localStorage` (clave `wm_token`)
-- **Login:** `POST /api/v1/auth/login` → devuelve `{ token, type, id, username, email, roles }`
+1. Controller recibe `ClientRequest` (valida con `@Valid`)
+2. Service verifica unicidad de email y RFC
+3. Service construye entidad `Client` y persiste vía `ClientRepository`
+4. Service mapea entidad → `ClientResponse` y retorna
+5. Controller responde `201 Created`
 
-### 5.2 Autorización por Roles
-| Rol | Acceso |
-|-----|--------|
-| `ROLE_ADMIN` | CRUD completo en todos los recursos, incluyendo DELETE |
-| `ROLE_EMPLEADO` | CRUD sin DELETE en la mayoría, dashboard empleado |
-| `ROLE_CLIENTE` | Solo lectura de sus propios datos |
+### 5.3 Validaciones
 
-### 5.3 Endpoints Públicos
-- `/api/v1/auth/**` (login, register)
-- `/swagger-ui/**`, `/v3/api-docs/**`
-- `/actuator/health`
-- `/producto/**`, `/css/**`, `/js/**` (frontend estático)
+**`ClientRequest`**:
+- `name`: `@NotBlank`
+- `email`: `@Email` (opcional)
+- `phone`, `address`, `rfc`: opcionales
 
-### 5.4 Configuración CORS
-- `allowedOrigins = List.of("*")` — ⚠️ Permisivo, aceptable en dev
-- Métodos permitidos: GET, POST, PUT, PATCH, DELETE, OPTIONS
+**Servicio**:
+- Email duplicado → `DuplicateResourceException` (409 Conflict)
+- RFC duplicado → `DuplicateResourceException` (409 Conflict)
+- Cliente no encontrado → `ResourceNotFoundException` (404 Not Found)
 
-### 5.5 JWT Secret
-- **Dev:** Hardcodeado en `application-dev.properties` (base64 de 256 bits)
-- **Prod:** Via variable de entorno `${JWT_SECRET}` ✅
+### 5.4 Paginación
 
-### 5.6 Manejo de Errores de Seguridad
-- **401:** `JwtEntryPoint` responde JSON con mensaje "No autorizado"
-- **403:** `GlobalExceptionHandler` captura `AccessDeniedException`
-- **CSRF:** Deshabilitado (API stateless) ✅
-- **Sesiones:** STATELESS ✅
-- **Password encoder:** BCrypt ✅
+`GET /api/v1/clientes?page=0&size=10&sort=id&direction=asc&search=Juan`
+
+Parámetros con valores por defecto desde `Constants.java`:
+- `page=0`, `size=10`, `sort=id`, `direction=asc`
+- `search` opcional: filtra por `name` (case-insensitive)
 
 ---
 
-## 6. DISEÑO DE API (RESTful)
+## 6. Suite de Pruebas
 
-### 6.1 Convenciones
-- **Prefijo base:** `/api/v1` (configurado via `WebConfig.configurePathMatch`)
-- **Nombres en español:** `/clientes`, `/muebles`, `/pedidos`, `/facturas`
-- **Paginación uniforme:** Parámetros `page`, `size`, `sort`, `direction` con defaults en `Constants.java`
-- **DTOs inmutables:** Java Records tanto en request como response
-- **Verbose HTTP correctos:** POST=crear, PUT=actualizar, PATCH=cambio parcial, DELETE=eliminar
+### 6.1 Resumen General
 
-### 6.2 Listado Completo de Endpoints
+| Clase de Prueba | Tipo | Cantidad | Estado |
+|---|---|---|---|
+| `ClientServiceImplTest` | Unitario (Mockito) | 10 | ✅ Todos pasan |
+| `OrderServiceTest` | Unitario (Mockito) | 13 | ✅ Todos pasan (preexistente) |
+| `ClientRepositoryTest` | Integración (DataJpaTest + H2) | 18 | ✅ Todos pasan |
+| `ClientControllerTest` | Integración (WebMvcTest) | 15 | ✅ Todos pasan |
+| `SysMaderaApplicationTests` | Integración (SpringBootTest) | 1 | ✅ Pasa |
+| **Total** | | **57** | **57 pasan** |
 
-#### Auth
-| Método | Path | Descripción | Acceso |
-|--------|------|-------------|--------|
-| POST | `/auth/login` | Iniciar sesión | Público |
-| POST | `/auth/register` | Registrar usuario | Público |
+### 6.2 ClientServiceImplTest (10 tests)
 
-#### Clientes
-| Método | Path | Descripción | Acceso |
-|--------|------|-------------|--------|
-| GET | `/clientes` | Listar (paginado + búsqueda) | ADMIN, EMPLEADO |
-| GET | `/clientes/{id}` | Obtener por ID | ADMIN, EMPLEADO, CLIENTE |
-| POST | `/clientes` | Crear | ADMIN, EMPLEADO |
-| PUT | `/clientes/{id}` | Actualizar | ADMIN, EMPLEADO |
-| DELETE | `/clientes/{id}` | Eliminar | ADMIN |
+| Grupo | Test | Descripción |
+|---|---|---|
+| **Create** (3) | `shouldSaveClient_whenValidRequest` | Crea cliente, verifica campos y captura argumento |
+| | `shouldThrowException_whenEmailAlreadyExists` | Email duplicado → `DuplicateResourceException` |
+| | `shouldThrowException_whenRfcAlreadyExists` | RFC duplicado → `DuplicateResourceException` |
+| **FindById** (2) | `shouldReturnClient_whenClientExists` | Encuentra cliente, verifica todos los campos |
+| | `shouldThrowException_whenClientNotFound` | No encontrado → `ResourceNotFoundException` |
+| **Update** (3) | `shouldUpdateClient_whenValidRequest` | Actualiza nombre y email |
+| | `shouldThrowException_whenClientNotFound` | No encontrado → `ResourceNotFoundException` |
+| | `shouldThrowException_whenEmailAlreadyTaken` | Email tomado → `DuplicateResourceException` |
+| **Delete** (2) | `shouldDeleteClient_whenClientExists` | Elimina cliente existente |
+| | `shouldThrowException_whenClientNotFound` | No encontrado → `ResourceNotFoundException` |
 
-#### Muebles
-| Método | Path | Descripción | Acceso |
-|--------|------|-------------|--------|
-| GET | `/muebles` | Listar (paginado + búsqueda + categoría) | Público |
-| GET | `/muebles/{id}` | Obtener por ID | Público |
-| POST | `/muebles` | Crear | ADMIN, EMPLEADO |
-| PUT | `/muebles/{id}` | Actualizar | ADMIN, EMPLEADO |
-| DELETE | `/muebles/{id}` | Soft-delete (desactivar) | ADMIN |
+Técnicas usadas:
+- `@ExtendWith(MockitoExtension.class)`
+- `@Mock` + `@InjectMocks`
+- `BDDMockito.given/willReturn/willThrow`
+- `ArgumentCaptor` para verificar estado interno guardado
+- `verify(clientRepository, never()).save(any())` para caminos de error
 
-#### Pedidos
-| Método | Path | Descripción | Acceso |
-|--------|------|-------------|--------|
-| GET | `/pedidos` | Listar (paginado + filtro por estado) | ADMIN, EMPLEADO |
-| GET | `/pedidos/{id}` | Obtener por ID | ADMIN, EMPLEADO, CLIENTE |
-| POST | `/pedidos` | Crear con detalles | ADMIN, EMPLEADO |
-| PATCH | `/pedidos/{id}/estado` | Cambiar estado | ADMIN, EMPLEADO |
-| GET | `/pedidos/cliente/{clientId}` | Órdenes por cliente | ADMIN, EMPLEADO |
+### 6.3 ClientRepositoryTest (18 tests)
 
-#### Facturas
-| Método | Path | Descripción | Acceso |
-|--------|------|-------------|--------|
-| GET | `/facturas` | Listar (paginado + filtro estado) | ADMIN, EMPLEADO |
-| GET | `/facturas/{id}` | Obtener por ID | ADMIN, EMPLEADO |
-| POST | `/facturas` | Crear desde orden | ADMIN, EMPLEADO |
-| GET | `/facturas/orden/{orderId}` | Factura por orden | ADMIN, EMPLEADO |
-| POST | `/facturas/{id}/pago` | Registrar pago (parcial/total) | ADMIN, EMPLEADO |
+| Grupo | Tests | Descripción |
+|---|---|---|
+| **Save** (1) | `shouldSaveClient` | Persiste con ID generado y timestamps |
+| **FindById** (2) | `shouldFindById`, `shouldReturnEmpty_whenNotFound` | Búsqueda por ID |
+| **FindByEmail** (2) | `shouldFindByEmail`, `shouldReturnEmpty_whenEmailNotFound` | Búsqueda por email |
+| **FindByRfc** (2) | `shouldFindByRfc`, `shouldReturnEmpty_whenRfcNotFound` | Búsqueda por RFC |
+| **ExistsByEmail** (2) | `shouldReturnTrue/False_whenEmailExists/NotExists` | Verifica existencia |
+| **ExistsByRfc** (2) | `shouldReturnTrue/False_whenRfcExists/NotExists` | Verifica existencia |
+| **FindByNameContainingIgnoreCase** (3) | Búsqueda insensitive, página vacía, mayúsculas/minúsculas | Paginación + filtro |
+| **Delete** (1) | `shouldDeleteClient` | Eliminación física |
+| **Update** (1) | `shouldUpdateClient` | Modificación y verificación |
+| **Constraints** (2) | `shouldEnforceUniqueEmail`, `shouldEnforceUniqueRfc` | Violación → `DataIntegrityViolationException` |
 
-#### Inventario Madera
-| Método | Path | Descripción | Acceso |
-|--------|------|-------------|--------|
-| GET | `/inventario-madera` | Listar (paginado + búsqueda) | ADMIN, EMPLEADO |
-| GET | `/inventario-madera/{id}` | Obtener por ID | ADMIN, EMPLEADO |
-| GET | `/inventario-madera/bajo-stock` | Alertas de stock bajo | ADMIN, EMPLEADO |
-| POST | `/inventario-madera` | Crear | ADMIN, EMPLEADO |
-| PUT | `/inventario-madera/{id}` | Actualizar | ADMIN, EMPLEADO |
-| DELETE | `/inventario-madera/{id}` | Eliminar | ADMIN |
+Técnicas usadas:
+- `@DataJpaTest` con `@Import(JpaConfig.class)` para auditoría
+- H2 en memoria (dialecto `H2Dialect`, `ddl-auto=create-drop`)
+- `saveAndFlush` para forzar validación de constraints en tests
+- AssertJ para aserciones
 
-#### Dashboard
-| Método | Path | Descripción | Acceso |
-|--------|------|-------------|--------|
-| GET | `/dashboard/admin` | Dashboard completo | ADMIN |
-| GET | `/dashboard/empleado` | Dashboard resumido | ADMIN, EMPLEADO |
+### 6.4 ClientControllerTest (15 tests)
 
-#### Reportes
-| Método | Path | Descripción | Acceso |
-|--------|------|-------------|--------|
-| GET | `/reportes/ventas` | Reporte de ventas por rango | ADMIN |
-| GET | `/reportes/inventario` | Reporte de inventario | ADMIN, EMPLEADO |
-| GET | `/reportes/mas-vendidos` | Top muebles más vendidos | ADMIN, EMPLEADO |
+| Grupo | Tests | Descripción |
+|---|---|---|
+| **Create** (3) | `shouldReturn201`, `shouldReturn400_whenInvalidBody`, `shouldReturn500_whenEmptyBody` | POST creación |
+| **FindById** (2) | `shouldReturn200`, `shouldReturn404_whenNotFound` | GET por ID |
+| **FindAll** (2) | `shouldReturn200`, `shouldAcceptSearch` | GET paginado |
+| **Update** (1) | `shouldReturn200` | PUT actualización |
+| **Delete** (2) | `shouldReturn200`, `shouldReturn404_whenNotFound` | DELETE |
+| **AccessControl** (5) | Roles EMPLEADO/CLIENTE en GET, POST, DELETE | Verificación de acceso |
 
----
+Técnicas usadas:
+- `@WebMvcTest(ClientController.class)` con exclusión de auto-configuraciones JPA/DataSource
+- `@AutoConfigureMockMvc(addFilters = false)` desactiva security filters
+- `@MockitoBean` para `ClientService`, `JwtTokenProvider`, `CustomUserDetailsService`
+- `@WithMockUser` para simular autenticación
+- MockMvc `perform()` y `andExpect()` con `jsonPath` para verificar respuestas JSON
+- Verificación de mensajes de error en `ResourceNotFoundException`
 
-## 7. FRONTEND
+### 6.5 Mejores Prácticas Aplicadas
 
-### 7.1 Arquitectura
-- **Tipo:** HTML estático + CSS + JavaScript vanilla
-- **Framework CSS:** Bootstrap 5.3.3
-- **Íconos:** Font Awesome 6.5.0
-- **Gráficos:** Chart.js 4.4 (dashboard)
-- **Sin framework JS moderno:** No usa React, Vue, Angular, ni siquiera jQuery
-- **Despliegue:** Archivos en `src/main/resources/static/producto/` servidos por Spring Boot
-
-### 7.2 Cliente HTTP (api.js)
-- Cliente `fetch` con manejo de token JWT desde `localStorage`
-- Redirección automática a login si 401
-- Funciones por recurso: `getClientes()`, `createPedido()`, etc.
-
-### 7.3 Utilidades JS (woodmanager.js)
-- Inicialización de sidebar colapsable
-- Charts de Chart.js con datos quemados (hardcoded, no vienen del backend)
-- Función `searchTable()` para filtro frontend
-- `confirmDelete()` con SweetAlert2 o confirm nativo
-- `formatCurrency()` para formateo monetario
-
-### 7.4 Páginas HTML (10 páginas)
-| Página | Archivo | Funcionalidad |
-|--------|---------|---------------|
-| Login | `login.html` | Formulario con toggle password, handler async |
-| Registro | `register.html` | Formulario de registro |
-| Dashboard | `dashboard.html` | Stats cards, gráficos, últimos pedidos, accesos rápidos |
-| Pedidos | `pedidos.html` | CRUD de pedidos |
-| Catálogo | `catalogo-muebles.html` | Catálogo con tarjetas de productos |
-| Clientes | `clientes.html` | CRUD de clientes con tabla y modal Bootstrap |
-| Inventario | `inventario-madera.html` | CRUD de inventario de madera |
-| Facturación | `facturacion.html` | CRUD de facturas |
-| Reportes | `reportes.html` | Reportes y gráficos |
-| Perfil | `perfil.html` | Perfil de usuario |
-
-### 7.5 Design System (CSS)
-- Modo oscuro completo
-- Paleta: fondo `#0a0e17`, superficie `#141b2d`, dorado `#C9A84C`, madera `#8B5E3C`
-- Tipografía: Inter (headings y body), JetBrains Mono (monospace)
-- Componentes: sidebar 260px, cards con border-radius 12px, tablas, modales, badges, botones
-- Responsive: 3 breakpoints (1200px, 992px, 768px, 480px)
-- Scrollbar personalizada, animaciones 0.3s ease
+- **@Nested + @DisplayName** — Organización jerárquica legible
+- **BDDMockito** — `given/willReturn` sobre `when/thenReturn`
+- **ArgumentCaptor** — Verificación de objetos pasados al repositorio
+- **Datos realistas** — Nombres, emails, RFCs, direcciones con sentido
+- **Constantes compartidas** — `CLIENT_ID`, `CLIENT_NAME`, etc. reutilizadas
+- **Métodos helpers** — `buildRequest()`, `buildResponse()`, `buildClient()`, `buildJsonRequest()`
+- **Pruebas de timestamps** — Verificación de `@CreatedDate` y `@LastModifiedDate`
+- **Pruebas de constraints** — Violaciones de unicidad verificadas con `DataIntegrityViolationException`
 
 ---
 
-## 8. ANÁLISIS DE CALIDAD
+## 7. Problemas Conocidos y Limitaciones
 
-### 8.1 ✅ Fortalezas
+### 7.1 Serialización de `PagedResponse<T>` en @WebMvcTest
 
-| Aspecto | Detalle |
-|---------|---------|
-| **Arquitectura limpia** | Separación clara en capas (Controller → Service → Repository) |
-| **DTOs inmutables** | Java Records en toda la capa de transferencia |
-| **Service Interface + Impl** | Buena práctica de desacoplamiento |
-| **Excepciones centralizadas** | `@RestControllerAdvice` con `GlobalExceptionHandler` |
-| **Spring Data JPA Auditing** | `@CreatedDate`, `@LastModifiedDate` en todas las entidades |
-| **Validación** | `@Valid` + Jakarta Validation en todos los request DTOs |
-| **Paginación uniforme** | `PagedResponse<T>` genérico en toda la API |
-| **Seguridad JWT** | Implementación correcta con filtro, provider y entry point |
-| **Lombok** | Uso consistente de `@Data`, `@Builder`, `@RequiredArgsConstructor` |
-| **Properties multi-entorno** | Perfiles dev y prod separados |
-| **Documentación OpenAPI** | Swagger UI con esquema Bearer JWT |
-| **Código moderno** | Java 17 Records, `Stream.toList()`, `var` |
-| **Manejo de estados** | Enums para estados de orden y factura con lógica de transición |
-| **Cálculos de negocio** | `totalValue` y `lowStock` calculados en responses (no persistidos) |
-| **Seed inicial** | Roles auto-creados al iniciar la app |
+**Problema**: El record genérico `PagedResponse<T>` no se serializa correctamente en el contexto de `@WebMvcTest` (Jackson no logra determinar el tipo concreto del parámetro genérico en un contexto de prueba simulado). La respuesta HTTP retorna 200 OK pero con cuerpo vacío.
 
-### 8.2 ❌ Problemas y Deuda Técnica
+**Impacto**: Las verificaciones `jsonPath` en los tests de `FindAll` (ej: `$.content[0].id`) fallan. Actualmente los tests solo verifican el status 200.
 
-| # | Problema | Severidad | Archivos Afectados |
-|---|----------|-----------|-------------------|
-| 1 | **Tests casi nulos** | 🔴 Alta | `src/test/` |
-| | Solo existe `SysMaderaApplicationTests.java` con `contextLoads()`. Sin tests unitarios de servicios, controllers, repositorios ni seguridad. | | |
-| 2 | **Reportes incompletos** | 🔴 Alta | `ReportServiceImpl.java:54-65` |
-| | `getInventoryReport()` y `getTopSellingFurniture()` retornan mensajes placeholder. Solo `getSalesReport()` tiene lógica real. | | |
-| 3 | **WoodSurplus sin endpoint REST** | 🟡 Media | `WoodSurplusServiceImpl.java` |
-| | El servicio existe pero no tiene controller ni endpoints. `create()` además recibe la entidad directamente (no DTO), rompiendo la consistencia del proyecto. | | |
-| 4 | **Bug frontend: registrarPago sin amount** | 🟡 Media | `api.js:187` |
-| | `registrarPago(id)` hace POST sin enviar el monto (`amount`). El backend espera `@RequestParam BigDecimal amount`. El pago siempre fallará. | | |
-| 5 | **Inconsistencia: soft-delete vs hard-delete** | 🟡 Media | `FurnitureServiceImpl.java:106-111` vs otros servicios |
-| | Furniture usa soft-delete (`active=false`), mientras Client, WoodInventory usan hard-delete (`repository.delete()`). | | |
-| 6 | **JWT secret hardcodeado en dev** | 🟡 Media | `application-dev.properties:14` |
-| | Visible en el repositorio. En prod usa variable de entorno, pero en dev cualquiera puede ver la clave. | | |
-| 7 | **CORS demasiado permisivo** | 🟡 Media | `SecurityConfig.java:70` |
-| | `allowedOrigins = List.of("*")` en producción podría ser riesgoso. Debería restringirse a dominios específicos. | | |
-| 8 | **Dashboard no conecta con API real** | 🟡 Media | `dashboard.html:209-214` |
-| | El frontend intenta leer `data.stats.ventasMes` pero el backend devuelve `totalClients`, `totalOrders`, etc. Los valores no se muestran. | | |
-| 9 | **Sin logging en servicios** | 🟡 Media | Todos los servicios impl |
-| | Solo `DataInitializer.java` usa `@Slf4j`. No hay logs de creación, actualización, errores, etc. | | |
-| 10 | **Orden no valida stock disponible** | 🟡 Media | `OrderServiceImpl.java:36-76` |
-| | Al crear una orden, no verifica si hay stock suficiente de los muebles. | | |
-| 11 | **Gráficos con datos hardcodeados** | 🟢 Baja | `woodmanager.js:47-212` |
-| | Los charts de Chart.js usan datos fijos, no datos reales del backend. | | |
-| 12 | **Directorios duplicados** | 🟢 Baja | `sys_madera/` en raíz |
-| | Existe un directorio `sys_madera/` duplicado con archivos sueltos (`.gitignore`, `HELP.md`, `mvnw`). | | |
-| 13 | **Carpeta templates/producto vacía** | 🟢 Baja | `src/main/resources/templates/producto/` |
-| | Existe pero no contiene archivos. Confuso si no se usa Thymeleaf. | | |
-| 14 | **Sin refresh token** | 🟢 Baja | Todo el sistema JWT |
-| | El token expira en 24h. No hay mecanismo de refresh token. | | |
-| 15 | **Frontend sin framework moderno** | 🟡 Media | Todo el frontend |
-| | HTML estático + JS vanilla. Difícil de escalar y mantener a largo plazo. | | |
+**Solución potencial**: Agregar configuración adicional de Jackson en el contexto de prueba, o usar un DTO no genérico para la respuesta paginada.
 
-### 8.3 📊 Estadísticas del Código
+### 7.2 Body Vacío Retorna 500 en Lugar de 400
 
-| Métrica | Valor |
-|---------|-------|
-| **Clases Java** | ~45 (models, services, controllers, DTOs, config, security, exceptions) |
-| **Líneas backend (Java)** | ~2,500 |
-| **Líneas frontend (CSS)** | 1,202 |
-| **Líneas frontend (JS)** | 463 (api.js + woodmanager.js) |
-| **Líneas frontend (HTML)** | ~3,000 (10 páginas) |
-| **Total aproximado** | ~7,200 líneas |
-| **Tests** | 1 test (context load) |
-| **Cobertura de tests** | ~0% |
+**Problema**: Un `POST` con cuerpo vacío lanza `HttpMessageNotReadableException` (antes de que `@Valid` pueda procesarlo). El `GlobalExceptionHandler` no tiene un handler específico para esta excepción, por lo que cae en el genérico `Exception → 500`.
+
+**Impacto**: El endpoint debería idealmente retornar 400. En producción, la validación ocurre en el frontend antes de enviar la petición.
+
+### 7.3 CGLIB Proxies y Path Prefix
+
+**Problema**: `@EnableMethodSecurity` crea proxies CGLIB para controllers con `@PreAuthorize`. El proxy CGLIB es una subclase que NO hereda la anotación `@RestController` (no es `@Inherited`). `WebConfig.configurePathMatch` usa `AnnotatedElementUtils.hasAnnotation` que tampoco detecta la anotación en la subclase CGLIB.
+
+**Impacto**: El path prefix `/api/v1` no se aplica a controllers con `@PreAuthorize` cuando `@EnableMethodSecurity` está activo. En los tests, se desactivó `@EnableMethodSecurity` para evitarlo (con `@AutoConfigureMockMvc(addFilters = false)`).
+
+**Solución potencial**: Usar `@EnableMethodSecurity(proxyTargetClass = false)` para forzar proxies JDK dinámicos (basados en interfaces), o configurar el path prefix mediante `WebMvcConfigurer` de otra forma.
+
+### 7.4 MinimalTest
+
+Un test preexistente (`MinimalTest`) que intenta cargar el contexto completo de `@WebMvcTest` con `SysMaderaApplication` falla porque `JwtTokenProvider` no está disponible como bean. El archivo fuente **ya no existe** en el proyecto (posiblemente eliminado), pero la compilación residual o el reporte de surefire aún lo referencian.
 
 ---
 
-## 9. MODELO DE DOMINIO - DETALLES DE ENTIDADES
+## 8. Configuración y Despliegue
 
-### User
-```java
-@Table(name = "users", uniqueConstraints = {@UniqueConstraint(columnNames = "username"), @UniqueConstraint(columnNames = "email")})
-// Relaciones: @ManyToMany → Role (EAGER), @OneToOne → Client (LAZY)
-// Auditoría: @CreatedDate, @LastModifiedDate
-```
-Campos: `id, username, email, password, firstName, lastName, enabled (default true), roles, client, createdAt, updatedAt`
+### 8.1 Requisitos
 
-### Client
-```java
-@Table(name = "clients")
-// Relaciones: @OneToOne → User, @OneToMany → Order
-```
-Campos: `id, name, email, phone, address, rfc, user, orders, createdAt, updatedAt`
+- Java 17+
+- MySQL 8+
+- Maven (o usar `mvnw` wrapper)
 
-### Furniture
-```java
-@Table(name = "furniture")
-```
-Campos: `id, name, description, price, woodType, dimensions, category, stockQuantity, active (default true, soft-delete), imageUrl, createdAt, updatedAt`
+### 8.2 Configuración de Base de Datos
 
-### Order
-```java
-@Table(name = "orders")
-```
-Campos: `id, orderNumber (ORD-YYYYMMDD-NNNN), status (enum: PENDIENTE/EN_PRODUCCION/COMPLETADO/ENTREGADO/CANCELADO), totalAmount, notes, client, orderDetails (orphanRemoval=true), invoice, createdAt, updatedAt`
-
-### OrderDetail
-```java
-@Table(name = "order_details")
-```
-Campos: `id, quantity, unitPrice, subtotal, order (FK), furniture (FK)`
-
-### Invoice
-```java
-@Table(name = "invoices")
-```
-Campos: `id, invoiceNumber (FAC-YYYYMMDD-NNNN), issueDate, dueDate, totalAmount, paidAmount (default 0), status (enum: PENDIENTE/PAGADA_PARCIAL/PAGADA/CANCELADA/VENCIDA), notes, order (FK único), createdAt, updatedAt`
-- **Método:** `determineStatus(paidAmount, totalAmount)` → lógica de estado
-
-### WoodInventory
-```java
-@Table(name = "wood_inventory")
-```
-Campos: `id, woodType, quantity, unit, unitPrice, supplier, description, minimumStock, createdAt, updatedAt`
-
-### WoodSurplus
-```java
-@Table(name = "wood_surplus")
-```
-Campos: `id, woodType, quantity, unit, dimensions, description, available (default true), woodInventory (FK), createdAt, updatedAt`
-
----
-
-## 10. LÓGICA DE NEGOCIO DESTACADA
-
-### 10.1 Generación de números de orden y factura
-```java
-// Order: ORD-20260602-0001
-"ORD-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" + String.format("%04d", count+1)
-// Invoice: FAC-20260602-0001
-"FAC-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" + String.format("%04d", count+1)
-```
-⚠️ Inseguro bajo concurrencia (usa `count()+1` sin bloqueo).
-
-### 10.2 Cálculo de estados de factura
-```
-paidAmount = 0          → PENDIENTE
-0 < paidAmount < total  → PAGADA_PARCIAL
-paidAmount >= total     → PAGADA
-```
-
-### 10.3 Alerta de stock bajo en inventario
-```java
-// Se calcula en el response, no se persiste
-boolean lowStock = item.getMinimumStock() != null && item.getQuantity().compareTo(item.getMinimumStock()) < 0;
-```
-
-### 10.4 Soft-delete en Furniture
-```java
-furniture.setActive(false);  // En lugar de delete físico
-```
-
----
-
-## 11. CONFIGURACIÓN DEL ENTORNO
-
-### Dev (application-dev.properties)
+**`application-dev.properties`**:
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/woodmanager?useSSL=false&serverTimezone=America/Mexico_City&allowPublicKeyRetrieval=true
+spring.datasource.url=jdbc:mysql://localhost:3306/woodmanager?useSSL=false&serverTimezone=America/Mexico_City
 spring.datasource.username=root
 spring.datasource.password=lokuw
 spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
+```
+
+### 8.3 JWT
+
+```properties
 app.jwt.secret=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970337336763979244226452948404D635166546A576E5A7234753778214125442A47
 app.jwt.expiration-ms=86400000
 ```
 
-### Prod (application-prod.properties)
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/woodmanager?useSSL=true&serverTimezone=America/Mexico_City
-spring.datasource.username=${DB_USERNAME}
-spring.datasource.password=${DB_PASSWORD}
-spring.jpa.hibernate.ddl-auto=validate
-app.jwt.secret=${JWT_SECRET}
-app.jwt.expiration-ms=86400000
-logging.level.com.madera.sys_madera=WARN
+### 8.4 Cómo Ejecutar
+
+```bash
+# Desarrollo
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+
+# Pruebas
+./mvnw test
+
+# Build
+./mvnw clean package -DskipTests
+
+# Producción
+java -jar target/sys_madera-1.0.0.jar --spring.profiles.active=prod
 ```
 
----
+### 8.5 Documentación API (Swagger)
 
-## 12. RECOMENDACIONES PRIORIZADAS
-
-### 🔴 Prioridad Alta (Crítico para producción)
-
-1. **Escribir tests** — Unitarios para servicios (JUnit 5 + Mockito), de integración para repositorios (@DataJpaTest), de API (WebMvcTest), de seguridad.
-2. **Completar reportes** — Implementar `getInventoryReport()` y `getTopSellingFurniture()` con consultas reales a la BD.
-3. **Corregir bug registrarPago** — Enviar `amount` como query param en api.js: `this.post(\`/facturas/\${id}/pago?amount=\${amount}\`)`.
-
-### 🟡 Prioridad Media (Mejora significativa)
-
-4. **Exponer WoodSurplus** — Crear controller REST o integrarlo en el flujo de inventario.
-5. **Unificar estrategia de borrado** — Decidir soft-delete o hard-delete y aplicar consistentemente.
-6. **Quitar JWT secret del repositorio** — Usar variable de entorno incluso en dev.
-7. **Restringir CORS** — Especificar orígenes permitidos en lugar de `*`.
-8. **Conectar dashboard con API real** — Corregir mapeo de campos del backend al frontend.
-9. **Agregar logging** — `@Slf4j` en servicios para trazabilidad.
-10. **Validar stock en creación de órdenes** — Verificar `Furniture.stockQuantity` antes de crear Order.
-
-### 🟢 Prioridad Baja (Mejora estética/mantenibilidad)
-
-11. **Reemplazar datos hardcodeados de gráficos** — Conectar Chart.js con endpoints reales.
-12. **Limpiar directorios duplicados** — Eliminar `sys_madera/` redundante.
-13. **Evaluar migración de frontend** — Considerar React/Vue/Angular o Thymeleaf para escalabilidad.
-14. **Implementar refresh token** — Mejorar la experiencia de sesión.
+Una vez iniciada la aplicación:
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
 ---
 
-## 13. PREGUNTAS ABIERTAS PARA CHATGPT
+## 9. Métricas de Código
 
-1. **Arquitectura:** ¿Recomiendas mantener el monolito o dividir en microservicios (ej. separar facturación)?
+### 9.1 Conteo de Archivos
 
-2. **Frontend:** ¿Vale la pena migrar a React/Next.js o es mejor usar Thymeleaf + HTMX para mantener el backend monolítico?
+| Tipo | Cantidad |
+|---|---|
+| Archivos Java (producción) | 47 |
+| Archivos Java (pruebas) | 5 |
+| Páginas HTML | 10 |
+| Archivos CSS/JS | 3 |
+| Archivos de configuración | 6 |
+| **Total archivos fuente** | **71** |
 
-3. **Seguridad:** ¿Cómo implementarías refresh tokens y rate limiting en esta estructura?
+### 9.2 Líneas de Código (aproximado)
 
-4. **Testing:** ¿Cuál sería la estrategia de tests más eficiente para empezar? ¿Priorizar unitarios o de integración?
+| Componente | Líneas |
+|---|---|
+| Modelos (10 entidades + 2 enums) | ~450 |
+| Repositorios (9 interfaces) | ~100 |
+| DTOs (17 records) | ~200 |
+| Servicios (9 interfaces + 9 impl) | ~900 |
+| Controladores (8) | ~300 |
+| Seguridad (4 clases) | ~200 |
+| Excepciones (5 clases) | ~80 |
+| Configuración (4 clases) | ~100 |
+| Frontend (HTML+CSS+JS) | ~3,000 |
+| **Total producción** | **~5,330** |
+| **Pruebas** | **~1,200** |
 
-5. **Reportes:** ¿Recomiendas usar la misma BD para reportes o implementar una vista materializada/separada?
+### 9.3 Cobertura de Pruebas por Módulo
 
-6. **Concurrencia:** La generación de números de orden (`count()+1`) no es segura bajo concurrencia. ¿Cómo lo resolverías? ¿Secuencias de BD, UUID, o tabla de contadores?
-
-7. **Deuda técnica:** Por dónde empezarías a pagar la deuda técnica considerando tiempo limitado?
-
-8. **Despliegue:** ¿Recomiendas Dockerizar? ¿Qué servicios adicionales agregarías (Redis, cola de mensajes)?
-
-9. **WoodSurplus:** ¿Debería tener su propio CRUD o integrarse como una funcionalidad dentro de inventario?
-
-10. **Soft-delete:** ¿Recomiendas soft-delete generalizado (con `@SQLRestriction`) o mantener hard-delete?
+| Módulo | Clases | Tests |
+|---|---|---|
+| ClientService | 1 | 10 unitarios |
+| OrderService | 1 | 13 unitarios (preexistente) |
+| ClientRepository | 1 | 18 de integración |
+| ClientController | 1 | 15 de integración |
+| Aplicación | 1 | 1 de contexto |
+| **Total** | **5** | **57** |
 
 ---
 
-## 14. ANEXO: CÓDIGO COMPLETO POR ARCHIVO
+## 10. Guía de Contribución
 
-A continuación se incluye el contenido completo de cada archivo del proyecto para referencia de la IA.
+### 10.1 Convenciones de Código
 
-[Nota: Los contenidos completos de todos los archivos ya fueron proporcionados arriba en las secciones anteriores. Si necesitas un archivo específico, indícalo para obtenerlo.]
+- **Lombok**: Usar `@Data`, `@Builder`, `@RequiredArgsConstructor` en entidades y servicios
+- **DTOs**: Preferir Java `record` para inmutabilidad
+- **Excepciones**: Usar excepciones específicas (`ResourceNotFoundException`, `DuplicateResourceException`, `BadRequestException`)
+- **Manejo global**: El `GlobalExceptionHandler` captura todas las excepciones y retorna `ErrorResponse` estandarizado
+
+### 10.2 Convenciones de Pruebas
+
+- Organizar con `@Nested` + `@DisplayName` (grupo funcional → caso específico)
+- Usar `BDDMockito.given/willReturn` (estilo BDD)
+- Preferir `@MockitoBean` sobre `@MockBean` en Spring Boot 3.4+
+- Usar `ArgumentCaptor` para verificar argumentos pasados a mocks
+- Datos de prueba realistas con constantes compartidas
+- Verificar timestamps (`createdAt`, `updatedAt`) en tests de integración
+
+### 10.3 Estructura de Nombres de Tests
+
+```
+@Test
+@DisplayName("should return 200 when client exists")
+void shouldReturn200() { ... }
+
+@Test  
+@DisplayName("should throw ResourceNotFoundException when client not found")
+void shouldThrowException_whenClientNotFound() { ... }
+```
+
+### 10.4 Para Agregar un Nuevo Módulo
+
+1. Crear entidad en `model/`
+2. Crear repositorio en `repository/`
+3. Crear DTOs de request/response en `dto/`
+4. Crear interfaz de servicio en `service/` e implementación en `service/impl/`
+5. Crear controller en `controller/` con `@PreAuthorize`
+6. Agregar rutas públicas en `SecurityConfig` si es necesario
+7. **Escribir pruebas**: service (unitarias), repository (DataJpaTest), controller (WebMvcTest)
 
 ---
 
-*Documento generado automáticamente el 02/06/2026 para asistencia con ChatGPT.*
+*Documento generado el 6 de junio de 2026.*
+*WoodManager — Sistema de Gestión de Carpintería*

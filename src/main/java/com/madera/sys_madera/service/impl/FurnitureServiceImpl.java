@@ -53,6 +53,12 @@ public class FurnitureServiceImpl implements FurnitureService {
         Furniture furniture = furnitureRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Mueble", "id", id));
 
+        if (!request.name().equals(furniture.getName())
+                && furnitureRepository.existsByName(request.name())) {
+            throw new DuplicateResourceException(
+                    "El mueble '" + request.name() + "' ya existe");
+        }
+
         furniture.setName(request.name());
         furniture.setDescription(request.description());
         furniture.setPrice(request.price());
