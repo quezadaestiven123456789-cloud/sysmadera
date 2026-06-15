@@ -2,7 +2,10 @@ package com.madera.sys_madera.config;
 
 import com.madera.sys_madera.model.ERole;
 import com.madera.sys_madera.model.Role;
+import com.madera.sys_madera.model.User;
+import com.madera.sys_madera.repository.NumberSequenceRepository;
 import com.madera.sys_madera.repository.RoleRepository;
+import com.madera.sys_madera.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -13,11 +16,14 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.inOrder;
@@ -30,6 +36,15 @@ class DataInitializerTest {
 
     @Mock
     private RoleRepository roleRepository;
+
+    @Mock
+    private NumberSequenceRepository numberSequenceRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private DataInitializer dataInitializer;
@@ -168,6 +183,22 @@ class DataInitializerTest {
             order.verify(roleRepository).findByName(ERole.ROLE_CLIENTE);
             order.verify(roleRepository).save(roleCaptor.capture());
             assertThat(roleCaptor.getValue().getName()).isEqualTo(ERole.ROLE_CLIENTE);
+        }
+    }
+
+    @Nested
+    @DisplayName("admin bootstrap — credentials not configured")
+    class AdminBootstrapSkipped {
+
+        @Test
+        @DisplayName("should skip admin creation when credentials are null")
+        void shouldSkip_whenCredentialsNull() throws Exception {
+            given(roleRepository.findByName(any(ERole.class))).willReturn(Optional.of(adminRole));
+
+            dataInitializer.run();
+
+            then(userRepository).should(never()).existsByUsername(anyString());
+            then(userRepository).should(never()).save(any(User.class));
         }
     }
 }

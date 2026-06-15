@@ -1,8 +1,10 @@
 package com.madera.sys_madera.controller;
 
+import com.madera.sys_madera.config.RateLimitProperties;
 import com.madera.sys_madera.dto.request.InvoiceRequest;
 import com.madera.sys_madera.dto.response.InvoiceResponse;
 import com.madera.sys_madera.dto.response.PagedResponse;
+import com.madera.sys_madera.exception.BadRequestException;
 import com.madera.sys_madera.exception.ResourceNotFoundException;
 import com.madera.sys_madera.security.CustomUserDetailsService;
 import com.madera.sys_madera.security.jwt.JwtTokenProvider;
@@ -72,6 +74,9 @@ class InvoiceControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private RateLimitProperties rateLimitProperties;
 
     @Nested
     @DisplayName("POST /api/v1/facturas")
@@ -244,7 +249,15 @@ class InvoiceControllerTest {
 
         @Test
         @DisplayName("should return 400 for negative amount")
-        void shouldReturn400_whenNegativeAmount() {
+        void shouldReturn400_whenNegativeAmount() throws Exception {
+            var negativeAmount = new BigDecimal("-100.00");
+            given(invoiceService.registerPayment(INVOICE_ID, negativeAmount))
+                    .willThrow(new BadRequestException("El monto del pago no puede ser negativo"));
+
+            mockMvc.perform(post(BASE_PATH + "/{id}/pago", INVOICE_ID)
+                            .param("amount", "-100.00"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("El monto del pago no puede ser negativo"));
         }
 
         @Test

@@ -1,9 +1,11 @@
 package com.madera.sys_madera.controller;
 
+import com.madera.sys_madera.config.RateLimitProperties;
 import com.madera.sys_madera.dto.request.LoginRequest;
 import com.madera.sys_madera.dto.request.RegisterRequest;
 import com.madera.sys_madera.dto.response.AuthResponse;
 import com.madera.sys_madera.dto.response.MessageResponse;
+import com.madera.sys_madera.exception.DuplicateResourceException;
 import com.madera.sys_madera.security.CustomUserDetailsService;
 import com.madera.sys_madera.security.jwt.JwtTokenProvider;
 import com.madera.sys_madera.service.AuthService;
@@ -21,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -69,6 +72,9 @@ class AuthControllerTest {
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
 
+    @MockitoBean
+    private RateLimitProperties rateLimitProperties;
+
     @Nested
     @DisplayName("POST /auth/login")
     class Login {
@@ -81,13 +87,13 @@ class AuthControllerTest {
             given(authService.login(any(LoginRequest.class))).willReturn(authResponse);
 
             mockMvc.perform(post(BASE_PATH + "/login")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "username": "jperez",
-                                        "password": "password123"
-                                    }
-                                    """))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "username": "jperez",
+                                "password": "password123"
+                            }
+                            """))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.token").value(TOKEN))
                     .andExpect(jsonPath("$.type").value("Bearer"))
@@ -101,13 +107,13 @@ class AuthControllerTest {
         @DisplayName("should return 400 when fields are empty")
         void shouldReturn400_whenFieldsEmpty(String username, String password) throws Exception {
             mockMvc.perform(post(BASE_PATH + "/login")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "username": "%s",
-                                        "password": "%s"
-                                    }
-                                    """.formatted(username, password)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "username": "%s",
+                                "password": "%s"
+                            }
+                            """.formatted(username, password)))
                     .andExpect(status().isBadRequest());
         }
 
@@ -115,9 +121,27 @@ class AuthControllerTest {
         @DisplayName("should return 500 when request body is missing")
         void shouldReturn500_whenBodyMissing() throws Exception {
             mockMvc.perform(post(BASE_PATH + "/login")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(""))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(""))
                     .andExpect(status().isInternalServerError());
+        }
+
+        @Test
+        @DisplayName("should return 401 when credentials are invalid")
+        void shouldReturn401_whenBadCredentials() throws Exception {
+            given(authService.login(any(LoginRequest.class)))
+                    .willThrow(new BadCredentialsException("Bad credentials"));
+
+            mockMvc.perform(post(BASE_PATH + "/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "username": "jperez",
+                                "password": "wrong"
+                            }
+                            """))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message").value("Credenciales inválidas"));
         }
     }
 
@@ -133,16 +157,16 @@ class AuthControllerTest {
             given(authService.register(any(RegisterRequest.class))).willReturn(messageResponse);
 
             mockMvc.perform(post(BASE_PATH + "/register")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "username": "jperez",
-                                        "email": "jperez@example.com",
-                                        "password": "password123",
-                                        "firstName": "Juan",
-                                        "lastName": "Pérez"
-                                    }
-                                    """))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "username": "jperez",
+                                "email": "jperez@example.com",
+                                "password": "password123",
+                                "firstName": "Juan",
+                                "lastName": "Pérez"
+                            }
+                            """))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.message").value("Usuario registrado exitosamente"));
         }
@@ -155,44 +179,65 @@ class AuthControllerTest {
             given(authService.register(any(RegisterRequest.class))).willReturn(messageResponse);
 
             mockMvc.perform(post(BASE_PATH + "/register")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "username": "admin",
-                                        "email": "admin@example.com",
-                                        "password": "password123",
-                                        "firstName": "Admin",
-                                        "lastName": "Sistema",
-                                        "roles": ["ADMIN", "EMPLEADO"]
-                                    }
-                                    """))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "username": "admin",
+                                "email": "admin@example.com",
+                                "password": "password123",
+                                "firstName": "Admin",
+                                "lastName": "Sistema",
+                                "roles": ["ADMIN", "EMPLEADO"]
+                            }
+                            """))
                     .andExpect(status().isCreated());
         }
 
         @ParameterizedTest
         @MethodSource("com.madera.sys_madera.controller.AuthControllerTest#invalidRegisterFields")
         @DisplayName("should return 400 when fields are invalid")
-        void shouldReturn400_whenFieldsInvalid(String username, String email, String password, String firstName) throws Exception {
+        void shouldReturn400_whenFieldsInvalid(String username, String email, String password, String firstName)
+                throws Exception {
             mockMvc.perform(post(BASE_PATH + "/register")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "username": "%s",
-                                        "email": "%s",
-                                        "password": "%s",
-                                        "firstName": "%s",
-                                        "lastName": "User"
-                                    }
-                                    """.formatted(username, email, password, firstName)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "username": "%s",
+                                "email": "%s",
+                                "password": "%s",
+                                "firstName": "%s",
+                                "lastName": "User"
+                            }
+                            """.formatted(username, email, password, firstName)))
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 409 when username already exists")
+        void shouldReturn409_whenDuplicateUsername() throws Exception {
+            given(authService.register(any(RegisterRequest.class)))
+                    .willThrow(new DuplicateResourceException("El nombre de usuario 'jperez' ya existe"));
+
+            mockMvc.perform(post(BASE_PATH + "/register")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "username": "jperez",
+                                "email": "jperez@example.com",
+                                "password": "password123",
+                                "firstName": "Juan",
+                                "lastName": "Pérez"
+                            }
+                            """))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.message").value("El nombre de usuario 'jperez' ya existe"));
         }
     }
 
     static Stream<Arguments> invalidLoginFields() {
         return Stream.of(
                 Arguments.of("", "password123"),
-                Arguments.of("jperez", "")
-        );
+                Arguments.of("jperez", ""));
     }
 
     static Stream<Arguments> invalidRegisterFields() {
@@ -200,7 +245,6 @@ class AuthControllerTest {
                 Arguments.of("ab", "test@example.com", "password123", "Test"),
                 Arguments.of("testuser", "invalid-email", "password123", "Test"),
                 Arguments.of("testuser", "test@example.com", "12345", "Test"),
-                Arguments.of("testuser", "test@example.com", "password123", "")
-        );
+                Arguments.of("testuser", "test@example.com", "password123", ""));
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.util.Map;
@@ -136,6 +137,23 @@ class GlobalExceptionHandlerTest {
                     Map.entry("name", "must not be blank")
             );
             assertThat(response.getBody().timestamp()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should handle ObjectError gracefully without ClassCastException")
+        void shouldHandleObjectError() {
+            var target = new Object();
+            var bindingResult = new BeanPropertyBindingResult(target, "invoiceRequest");
+            bindingResult.addError(new ObjectError("invoiceRequest", "La validación global falló"));
+
+            var ex = new MethodArgumentNotValidException(null, bindingResult);
+
+            ResponseEntity<GlobalExceptionHandler.ErrorResponse> response = handler.handleValidationErrors(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().errors()).containsKey("invoiceRequest")
+                    .containsValue("La validación global falló");
         }
 
         @Test

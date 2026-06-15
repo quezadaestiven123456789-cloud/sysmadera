@@ -1,5 +1,6 @@
 package com.madera.sys_madera.controller;
 
+import com.madera.sys_madera.config.RateLimitProperties;
 import com.madera.sys_madera.dto.request.OrderRequest;
 import com.madera.sys_madera.dto.response.OrderResponse;
 import com.madera.sys_madera.dto.response.PagedResponse;
@@ -70,6 +71,9 @@ class OrderControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private RateLimitProperties rateLimitProperties;
 
     @Nested
     @DisplayName("POST /api/v1/pedidos")
@@ -230,6 +234,18 @@ class OrderControllerTest {
                             .param("status", "INVALIDO"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value("Estado inválido: INVALIDO"));
+        }
+
+        @Test
+        @DisplayName("should return 404 when order not found")
+        void shouldReturn404_whenNotFound() throws Exception {
+            given(orderService.updateStatus(anyLong(), anyString()))
+                    .willThrow(new ResourceNotFoundException("Orden", "id", 999L));
+
+            mockMvc.perform(patch(BASE_PATH + "/{id}/estado", 999L)
+                            .param("status", "COMPLETADO"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("Orden no encontrado con id: '999'"));
         }
     }
 

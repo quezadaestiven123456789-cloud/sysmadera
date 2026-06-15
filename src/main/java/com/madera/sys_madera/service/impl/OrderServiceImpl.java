@@ -10,6 +10,7 @@ import com.madera.sys_madera.repository.ClientRepository;
 import com.madera.sys_madera.repository.FurnitureRepository;
 import com.madera.sys_madera.repository.OrderRepository;
 import com.madera.sys_madera.service.OrderService;
+import com.madera.sys_madera.service.SequenceGeneratorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final ClientRepository clientRepository;
     private final FurnitureRepository furnitureRepository;
+    private final SequenceGeneratorService sequenceGeneratorService;
 
     @Override
     @Transactional
@@ -138,15 +140,38 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Estado inválido: " + status);
         }
 
+        EOrderStatus currentStatus = order.getStatus();
+
+        if (currentStatus == newStatus) {
+            return toResponse(order);
+        }
+
+        if (currentStatus == EOrderStatus.CANCELADO || currentStatus == EOrderStatus.ENTREGADO) {
+            throw new BadRequestException(
+                    "No se puede cambiar el estado de una orden " + currentStatus.name());
+        }
+
+        if (newStatus == EOrderStatus.CANCELADO) {
+            restoreStock(order);
+        }
+
         order.setStatus(newStatus);
         order = orderRepository.save(order);
         return toResponse(order);
     }
 
+    private void restoreStock(Order order) {
+        for (OrderDetail detail : order.getOrderDetails()) {
+            Furniture furniture = furnitureRepository.findById(detail.getFurniture().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Mueble", "id", detail.getFurniture().getId()));
+            furniture.setStockQuantity(furniture.getStockQuantity() + detail.getQuantity());
+        }
+    }
+
     private String generateOrderNumber() {
         String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long count = orderRepository.count() + 1;
-        return "ORD-" + datePart + "-" + String.format("%04d", count);
+        long nextVal = sequenceGeneratorService.nextValue("ORDER_SEQ");
+        return "ORD-" + datePart + "-" + String.format("%04d", nextVal);
     }
 
     private PagedResponse<OrderResponse> buildPagedResponse(Page<Order> orders) {

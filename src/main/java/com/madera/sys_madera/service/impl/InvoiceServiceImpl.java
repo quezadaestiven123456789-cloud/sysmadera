@@ -9,6 +9,7 @@ import com.madera.sys_madera.model.*;
 import com.madera.sys_madera.repository.InvoiceRepository;
 import com.madera.sys_madera.repository.OrderRepository;
 import com.madera.sys_madera.service.InvoiceService;
+import com.madera.sys_madera.service.SequenceGeneratorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +29,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final OrderRepository orderRepository;
+    private final SequenceGeneratorService sequenceGeneratorService;
 
     @Override
     @Transactional
@@ -139,8 +141,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private String generateInvoiceNumber() {
         String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long count = invoiceRepository.count() + 1;
-        return "FAC-" + datePart + "-" + String.format("%04d", count);
+        long nextVal = sequenceGeneratorService.nextValue("INVOICE_SEQ");
+        return "FAC-" + datePart + "-" + String.format("%04d", nextVal);
     }
 
     private InvoiceResponse toResponse(Invoice invoice) {

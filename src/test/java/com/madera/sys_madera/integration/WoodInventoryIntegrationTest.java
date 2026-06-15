@@ -280,13 +280,13 @@ class WoodInventoryIntegrationTest {
                 @DisplayName("should return items below minimum stock")
                 void shouldReturnLowStockItems() throws Exception {
                         woodInventoryRepository.save(WoodInventory.builder()
-                                        .woodType("Roble").quantity(new BigDecimal("100.00"))
+                                        .woodType("Roble").quantity(new BigDecimal("30.00"))
                                         .unit("m³").unitPrice(new BigDecimal("800.00"))
                                         .minimumStock(new BigDecimal("50.00")).build());
                         mockMvc.perform(get("/api/v1/inventario-madera/bajo-stock"))
                                         .andExpect(status().isOk())
                                         .andExpect(jsonPath("$.length()").value(1))
-                                        .andExpect(jsonPath("$[0].woodType").value("Caoba"))
+                                        .andExpect(jsonPath("$[0].woodType").value("Roble"))
                                         .andExpect(jsonPath("$[0].lowStock").value(true));
                 }
 

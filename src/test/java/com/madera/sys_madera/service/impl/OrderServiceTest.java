@@ -13,6 +13,7 @@ import com.madera.sys_madera.model.OrderDetail;
 import com.madera.sys_madera.repository.ClientRepository;
 import com.madera.sys_madera.repository.FurnitureRepository;
 import com.madera.sys_madera.repository.OrderRepository;
+import com.madera.sys_madera.service.SequenceGeneratorService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,9 @@ class OrderServiceTest {
     @Mock
     private FurnitureRepository furnitureRepository;
 
+    @Mock
+    private SequenceGeneratorService sequenceGeneratorService;
+
     @InjectMocks
     private OrderServiceImpl orderService;
 
@@ -77,7 +81,7 @@ class OrderServiceTest {
 
             given(clientRepository.findById(CLIENT_ID)).willReturn(Optional.of(client));
             given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(furniture));
-            given(orderRepository.count()).willReturn(0L);
+            given(sequenceGeneratorService.nextValue("ORDER_SEQ")).willReturn(1L);
             given(orderRepository.save(any(Order.class))).willReturn(order);
 
             OrderResponse response = orderService.create(request);
@@ -112,7 +116,7 @@ class OrderServiceTest {
 
             given(clientRepository.findById(CLIENT_ID)).willReturn(Optional.of(client));
             given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(furniture));
-            given(orderRepository.count()).willReturn(0L);
+            given(sequenceGeneratorService.nextValue("ORDER_SEQ")).willReturn(1L);
             given(orderRepository.save(any(Order.class))).willReturn(order);
 
             orderService.create(request);
@@ -178,7 +182,7 @@ class OrderServiceTest {
 
             given(clientRepository.findById(CLIENT_ID)).willReturn(Optional.of(client));
             given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(furniture));
-            given(orderRepository.count()).willReturn(0L);
+            given(sequenceGeneratorService.nextValue("ORDER_SEQ")).willReturn(1L);
             given(orderRepository.save(any(Order.class))).willReturn(order);
 
             orderService.create(request);
@@ -245,7 +249,7 @@ class OrderServiceTest {
             given(clientRepository.findById(CLIENT_ID)).willReturn(Optional.of(client));
             given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(firstFurniture));
             given(furnitureRepository.findById(secondFurnitureId)).willReturn(Optional.of(secondFurniture));
-            given(orderRepository.count()).willReturn(0L);
+            given(sequenceGeneratorService.nextValue("ORDER_SEQ")).willReturn(1L);
             given(orderRepository.save(any(Order.class))).willReturn(order);
 
             orderService.create(request);
@@ -463,6 +467,129 @@ class OrderServiceTest {
             OrderResponse response = orderService.updateStatus(ORDER_ID, "COMPLETADO");
 
             assertThat(response.status()).isEqualTo("COMPLETADO");
+            verify(orderRepository).save(any(Order.class));
+        }
+
+        @Test
+        @DisplayName("should restore stock when cancelling order")
+        void shouldRestoreStock_whenCancelling() {
+            var client = buildClient();
+            var furniture = buildFurniture();
+            var order = buildOrder(client, furniture);
+
+            given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
+            given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(furniture));
+            given(orderRepository.save(any(Order.class))).willReturn(order);
+
+            OrderResponse response = orderService.updateStatus(ORDER_ID, "CANCELADO");
+
+            assertThat(response.status()).isEqualTo("CANCELADO");
+            assertThat(furniture.getStockQuantity()).isEqualTo(FURNITURE_STOCK + QUANTITY);
+            verify(furnitureRepository).findById(FURNITURE_ID);
+            verify(orderRepository).save(any(Order.class));
+        }
+
+        @Test
+        @DisplayName("should be idempotent when cancelling an already cancelled order")
+        void shouldBeIdempotent_whenAlreadyCancelled() {
+            var client = buildClient();
+            var furniture = buildFurniture();
+            var order = buildOrder(client, furniture);
+            order.setStatus(EOrderStatus.CANCELADO);
+
+            given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
+
+            OrderResponse response = orderService.updateStatus(ORDER_ID, "CANCELADO");
+
+            assertThat(response.status()).isEqualTo("CANCELADO");
+            assertThat(furniture.getStockQuantity()).isEqualTo(FURNITURE_STOCK);
+            verify(furnitureRepository, never()).findById(any());
+            verify(orderRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should reject status change for delivered order")
+        void shouldReject_whenOrderDelivered() {
+            var client = buildClient();
+            var furniture = buildFurniture();
+            var order = buildOrder(client, furniture);
+            order.setStatus(EOrderStatus.ENTREGADO);
+
+            given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
+
+            assertThatThrownBy(() -> orderService.updateStatus(ORDER_ID, "CANCELADO"))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("ENTREGADO");
+
+            verify(orderRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should reject status change for cancelled order")
+        void shouldReject_whenOrderCancelled() {
+            var client = buildClient();
+            var furniture = buildFurniture();
+            var order = buildOrder(client, furniture);
+            order.setStatus(EOrderStatus.CANCELADO);
+
+            given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
+
+            assertThatThrownBy(() -> orderService.updateStatus(ORDER_ID, "PENDIENTE"))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("CANCELADO");
+
+            verify(orderRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should restore stock for all furniture items when cancelling")
+        void shouldRestoreAllStock_whenCancelling() {
+            var client = buildClient();
+            var firstFurniture = buildFurniture();
+            var secondFurniture = Furniture.builder()
+                    .id(2L)
+                    .name("Silla Pino")
+                    .price(new BigDecimal("85.00"))
+                    .stockQuantity(25)
+                    .build();
+
+            var detail1 = OrderDetail.builder()
+                    .id(1L)
+                    .furniture(firstFurniture)
+                    .quantity(QUANTITY)
+                    .unitPrice(FURNITURE_PRICE)
+                    .subtotal(FURNITURE_PRICE.multiply(BigDecimal.valueOf(QUANTITY)))
+                    .build();
+            var detail2 = OrderDetail.builder()
+                    .id(2L)
+                    .furniture(secondFurniture)
+                    .quantity(5)
+                    .unitPrice(new BigDecimal("85.00"))
+                    .subtotal(new BigDecimal("425.00"))
+                    .build();
+
+            var order = Order.builder()
+                    .id(ORDER_ID)
+                    .orderNumber("ORD-20250601-0001")
+                    .status(EOrderStatus.PENDIENTE)
+                    .totalAmount(new BigDecimal("500.00"))
+                    .notes("Nota")
+                    .client(client)
+                    .orderDetails(List.of(detail1, detail2))
+                    .build();
+            detail1.setOrder(order);
+            detail2.setOrder(order);
+
+            given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
+            given(furnitureRepository.findById(FURNITURE_ID)).willReturn(Optional.of(firstFurniture));
+            given(furnitureRepository.findById(2L)).willReturn(Optional.of(secondFurniture));
+            given(orderRepository.save(any(Order.class))).willReturn(order);
+
+            orderService.updateStatus(ORDER_ID, "CANCELADO");
+
+            assertThat(firstFurniture.getStockQuantity()).isEqualTo(FURNITURE_STOCK + QUANTITY);
+            assertThat(secondFurniture.getStockQuantity()).isEqualTo(25 + 5);
+            verify(furnitureRepository, times(2)).findById(any());
             verify(orderRepository).save(any(Order.class));
         }
 

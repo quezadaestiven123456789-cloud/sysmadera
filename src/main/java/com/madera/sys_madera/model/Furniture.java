@@ -54,6 +54,10 @@ public class Furniture {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

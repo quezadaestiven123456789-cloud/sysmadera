@@ -46,6 +46,10 @@ public class WoodInventory {
     @Column(name = "minimum_stock", precision = 10, scale = 2)
     private BigDecimal minimumStock;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

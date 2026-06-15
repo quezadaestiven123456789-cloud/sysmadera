@@ -1,5 +1,6 @@
 package com.madera.sys_madera.controller;
 
+import com.madera.sys_madera.config.RateLimitProperties;
 import com.madera.sys_madera.dto.request.WoodInventoryRequest;
 import com.madera.sys_madera.dto.response.PagedResponse;
 import com.madera.sys_madera.dto.response.WoodInventoryResponse;
@@ -72,6 +73,9 @@ class WoodInventoryControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private RateLimitProperties rateLimitProperties;
 
     @Nested
     @DisplayName("POST /api/v1/inventario-madera")
@@ -159,6 +163,21 @@ class WoodInventoryControllerTest {
                             .content(requestBody))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Inventario no encontrado con id: '999'"));
+        }
+
+        @Test
+        @DisplayName("should return 400 when request body is invalid")
+        void shouldReturn400_whenInvalidBody() throws Exception {
+            var invalidBody = """
+                    {
+                        "woodType": ""
+                    }
+                    """;
+
+            mockMvc.perform(put(BASE_PATH + "/{id}", ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(invalidBody))
+                    .andExpect(status().isBadRequest());
         }
     }
 

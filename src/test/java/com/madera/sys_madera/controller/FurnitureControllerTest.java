@@ -1,5 +1,6 @@
 package com.madera.sys_madera.controller;
 
+import com.madera.sys_madera.config.RateLimitProperties;
 import com.madera.sys_madera.dto.request.FurnitureRequest;
 import com.madera.sys_madera.dto.response.FurnitureResponse;
 import com.madera.sys_madera.dto.response.PagedResponse;
@@ -71,6 +72,9 @@ class FurnitureControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private RateLimitProperties rateLimitProperties;
 
     @Nested
     @DisplayName("POST /api/v1/muebles")
@@ -172,6 +176,21 @@ class FurnitureControllerTest {
                             .content(requestBody))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.message").value("El mueble 'Mesa Roble' ya existe"));
+        }
+
+        @Test
+        @DisplayName("should return 400 when request body is invalid")
+        void shouldReturn400_whenInvalidBody() throws Exception {
+            var invalidBody = """
+                    {
+                        "name": ""
+                    }
+                    """;
+
+            mockMvc.perform(put(BASE_PATH + "/{id}", FURNITURE_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(invalidBody))
+                    .andExpect(status().isBadRequest());
         }
     }
 

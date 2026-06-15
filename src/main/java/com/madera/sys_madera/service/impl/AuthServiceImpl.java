@@ -41,14 +41,14 @@ public class AuthServiceImpl implements AuthService {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.username(), request.password()));
 
-        String token = jwtTokenProvider.generateToken(authentication.getName());
-
-        User user = userRepository.findByUsername(authentication.getName())
-                .orElseThrow();
-
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
+
+        String token = jwtTokenProvider.generateToken(authentication.getName(), roles);
+
+        User user = userRepository.findByUsername(authentication.getName())
+                .orElseThrow();
 
         return new AuthResponse(
                 token,

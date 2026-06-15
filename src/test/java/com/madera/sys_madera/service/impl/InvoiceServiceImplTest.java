@@ -8,6 +8,7 @@ import com.madera.sys_madera.exception.ResourceNotFoundException;
 import com.madera.sys_madera.model.*;
 import com.madera.sys_madera.repository.InvoiceRepository;
 import com.madera.sys_madera.repository.OrderRepository;
+import com.madera.sys_madera.service.SequenceGeneratorService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,9 @@ class InvoiceServiceImplTest {
     @Mock
     private OrderRepository orderRepository;
 
+    @Mock
+    private SequenceGeneratorService sequenceGeneratorService;
+
     @InjectMocks
     private InvoiceServiceImpl invoiceService;
 
@@ -68,7 +72,7 @@ class InvoiceServiceImplTest {
 
             given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
             given(invoiceRepository.findByOrderId(ORDER_ID)).willReturn(Optional.empty());
-            given(invoiceRepository.count()).willReturn(0L);
+            given(sequenceGeneratorService.nextValue("INVOICE_SEQ")).willReturn(1L);
             given(invoiceRepository.save(any(Invoice.class))).willAnswer(i -> i.getArgument(0));
 
             InvoiceResponse response = invoiceService.create(request);
@@ -92,7 +96,7 @@ class InvoiceServiceImplTest {
 
             given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
             given(invoiceRepository.findByOrderId(ORDER_ID)).willReturn(Optional.empty());
-            given(invoiceRepository.count()).willReturn(0L);
+            given(sequenceGeneratorService.nextValue("INVOICE_SEQ")).willReturn(1L);
             given(invoiceRepository.save(any(Invoice.class))).willAnswer(i -> i.getArgument(0));
 
             InvoiceResponse response = invoiceService.create(request);
@@ -110,7 +114,7 @@ class InvoiceServiceImplTest {
 
             given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
             given(invoiceRepository.findByOrderId(ORDER_ID)).willReturn(Optional.empty());
-            given(invoiceRepository.count()).willReturn(0L);
+            given(sequenceGeneratorService.nextValue("INVOICE_SEQ")).willReturn(1L);
             given(invoiceRepository.save(any(Invoice.class))).willAnswer(i -> i.getArgument(0));
 
             InvoiceResponse response = invoiceService.create(request);
@@ -172,7 +176,7 @@ class InvoiceServiceImplTest {
 
             given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
             given(invoiceRepository.findByOrderId(ORDER_ID)).willReturn(Optional.empty());
-            given(invoiceRepository.count()).willReturn(0L);
+            given(sequenceGeneratorService.nextValue("INVOICE_SEQ")).willReturn(1L);
             given(invoiceRepository.save(any(Invoice.class))).willAnswer(i -> i.getArgument(0));
 
             InvoiceResponse response = invoiceService.create(request);

@@ -86,7 +86,7 @@ class AuthServiceImplTest {
 
             given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .willReturn(authentication);
-            given(jwtTokenProvider.generateToken(USERNAME)).willReturn(TOKEN);
+            given(jwtTokenProvider.generateToken(USERNAME, List.of("ROLE_ADMIN"))).willReturn(TOKEN);
             given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
 
             AuthResponse response = authService.login(request);
@@ -119,7 +119,7 @@ class AuthServiceImplTest {
 
             given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .willReturn(authentication);
-            given(jwtTokenProvider.generateToken(USERNAME)).willReturn(TOKEN);
+            given(jwtTokenProvider.generateToken(USERNAME, List.of("ROLE_ADMIN"))).willReturn(TOKEN);
             given(userRepository.findByUsername(USERNAME)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> authService.login(request))

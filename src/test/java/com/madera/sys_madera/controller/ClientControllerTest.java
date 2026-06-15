@@ -1,8 +1,10 @@
 package com.madera.sys_madera.controller;
 
+import com.madera.sys_madera.config.RateLimitProperties;
 import com.madera.sys_madera.dto.request.ClientRequest;
 import com.madera.sys_madera.dto.response.ClientResponse;
 import com.madera.sys_madera.dto.response.PagedResponse;
+import com.madera.sys_madera.exception.DuplicateResourceException;
 import com.madera.sys_madera.exception.ResourceNotFoundException;
 import com.madera.sys_madera.security.CustomUserDetailsService;
 import com.madera.sys_madera.security.jwt.JwtTokenProvider;
@@ -79,6 +81,9 @@ class ClientControllerTest {
 
         @MockitoBean
         private CustomUserDetailsService customUserDetailsService;
+
+        @MockitoBean
+        private RateLimitProperties rateLimitProperties;
 
         @Nested
         @DisplayName("POST /api/v1/clientes")
@@ -222,6 +227,36 @@ class ClientControllerTest {
                                         .andExpect(jsonPath("$.id").value(CLIENT_ID))
                                         .andExpect(jsonPath("$.name").value("Juan Actualizado"))
                                         .andExpect(jsonPath("$.phone").value("555-9999"));
+                }
+
+                @Test
+                @DisplayName("should return 404 when client not found")
+                void shouldReturn404_whenNotFound() throws Exception {
+                        var requestBody = buildJsonRequest();
+
+                        given(clientService.update(anyLong(), any(ClientRequest.class)))
+                                        .willThrow(new ResourceNotFoundException("Cliente", "id", 999L));
+
+                        mockMvc.perform(put(BASE_PATH + "/{id}", 999L)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(requestBody))
+                                        .andExpect(status().isNotFound())
+                                        .andExpect(jsonPath("$.message").value("Cliente no encontrado con id: '999'"));
+                }
+
+                @Test
+                @DisplayName("should return 409 when email is already taken")
+                void shouldReturn409_whenDuplicateEmail() throws Exception {
+                        var requestBody = buildJsonRequest();
+
+                        given(clientService.update(anyLong(), any(ClientRequest.class)))
+                                        .willThrow(new DuplicateResourceException("El email 'juan@example.com' ya está registrado"));
+
+                        mockMvc.perform(put(BASE_PATH + "/{id}", CLIENT_ID)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(requestBody))
+                                        .andExpect(status().isConflict())
+                                        .andExpect(jsonPath("$.message").value("El email 'juan@example.com' ya está registrado"));
                 }
         }
 
